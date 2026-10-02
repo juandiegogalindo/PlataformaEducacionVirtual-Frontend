@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import ProtectedRoute from "./routes/ProtectedRoute";
+import Layout from "./components/layout/Layout";
 import Login from "./pages/login/Login";
 import Cursos from "./pages/cursos/Cursos";
 
@@ -8,14 +9,16 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
+
         <Route
-          path="/cursos"
           element={
             <ProtectedRoute>
-              <Cursos />
+              <Layout />
             </ProtectedRoute>
           }
-        />
+        >
+          <Route path="/cursos" element={<Cursos />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   );
