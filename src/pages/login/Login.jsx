@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuthStore } from "../../auth/authStore";
 
 export default function Login() {
@@ -48,6 +48,9 @@ export default function Login() {
         <button type="submit" disabled={loading} className="bg-white text-black py-2 rounded font-semibold">
           {loading ? "Ingresando..." : "Ingresar"}
         </button>
+        <p className="text-gray-400 text-sm text-center mt-2">
+        ¿No tienes cuenta? <Link to="/registro" className="underline">Regístrate</Link>
+        </p>
       </form>
     </div>
   );
