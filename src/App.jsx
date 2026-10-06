@@ -4,6 +4,7 @@ import Layout from "./components/layout/Layout";
 import Login from "./pages/login/Login";
 import Cursos from "./pages/cursos/Cursos";
 import Registro from "./pages/login/Registro";
+import CursoDetalle from "./pages/cursos/CursoDetalle";
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
           }
         >
           <Route path="/cursos" element={<Cursos />} />
+          <Route path="/cursos/:id" element={<CursoDetalle />} />
         </Route>
       </Routes>
     </BrowserRouter>
