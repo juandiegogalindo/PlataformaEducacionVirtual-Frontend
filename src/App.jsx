@@ -5,6 +5,7 @@ import Login from "./pages/login/Login";
 import Cursos from "./pages/cursos/Cursos";
 import Registro from "./pages/login/Registro";
 import CursoDetalle from "./pages/cursos/CursoDetalle";
+import Perfil from "./pages/perfil/Perfil";
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
             </ProtectedRoute>
           }
         >
+          <Route path="/perfil" element={<Perfil />} />
           <Route path="/cursos" element={<Cursos />} />
           <Route path="/cursos/:id" element={<CursoDetalle />} />
         </Route>

@@ -40,4 +40,9 @@ export const useAuthStore = create((set, get) => ({
     localStorage.removeItem("user");
     set({ user: null, accessToken: null, refreshToken: null });
   },
+
+    setUser: (user) => {
+    localStorage.setItem("user", JSON.stringify(user));
+    set({ user });
+  },
 }));
