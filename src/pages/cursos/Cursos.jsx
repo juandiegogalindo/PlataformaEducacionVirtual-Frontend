@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { listarCursosRequest } from "../../api/cursos";
+import { useAuthStore } from "../../auth/authStore";
 
 const estadoColor = {
   ACTIVO: "bg-green-900 text-green-300",
@@ -8,26 +9,34 @@ const estadoColor = {
 };
 
 export default function Cursos() {
+  const user = useAuthStore((state) => state.user);
   const [cursos, setCursos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-  listarCursosRequest()
-    .then((res) => {
-      const activos = res.data.filter((curso) => curso.estado === "ACTIVO");
-      setCursos(activos);
-    })
-    .catch(() => setError("No se pudieron cargar los cursos"))
-    .finally(() => setLoading(false));
-}, []);
+    listarCursosRequest()
+      .then((res) => {
+        let lista = res.data;
+        if (user?.rol === "Docente") {
+          lista = lista.filter((curso) => curso.docenteCorreo === user.correo);
+        } else if (user?.rol === "Estudiante") {
+          lista = lista.filter((curso) => curso.estado === "ACTIVO");
+        }
+        setCursos(lista);
+      })
+      .catch(() => setError("No se pudieron cargar los cursos"))
+      .finally(() => setLoading(false));
+  }, [user]);
 
   if (loading) return <p className="text-gray-400">Cargando cursos...</p>;
   if (error) return <p className="text-red-500">{error}</p>;
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-4">Catálogo de Cursos</h1>
+      <h1 className="text-2xl font-bold mb-4">
+        {user?.rol === "Docente" ? "Mis cursos" : "Catálogo de Cursos"}
+      </h1>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {cursos.map((curso) => (
           <Link

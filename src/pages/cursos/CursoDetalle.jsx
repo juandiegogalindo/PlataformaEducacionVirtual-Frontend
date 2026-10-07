@@ -4,6 +4,8 @@ import { verCursoRequest } from "../../api/cursos";
 import { inscribirseRequest, misCursosRequest, cancelarInscripcionRequest } from "../../api/inscripciones";
 import { useAuthStore } from "../../auth/authStore";
 
+
+
 export default function CursoDetalle() {
   const { id } = useParams();
   const user = useAuthStore((state) => state.user);
@@ -16,18 +18,23 @@ export default function CursoDetalle() {
   const [accionLoading, setAccionLoading] = useState(false);
 
   function cargarDatos() {
-    setLoading(true);
-    Promise.all([verCursoRequest(id), misCursosRequest()])
-      .then(([cursoRes, misCursosRes]) => {
-        setCurso(cursoRes.data);
-        const yaInscrito = misCursosRes.data.find(
-          (i) => i.cursoId === Number(id) && i.estado === "ACTIVA"
-        );
-        setInscripcion(yaInscrito || null);
-      })
-      .catch(() => setError("No se pudo cargar el curso"))
-      .finally(() => setLoading(false));
-  }
+  setLoading(true);
+
+  const cursoPromise = verCursoRequest(id);
+  const misCursosPromise =
+    user?.rol === "Estudiante" ? misCursosRequest() : Promise.resolve({ data: [] });
+
+  Promise.all([cursoPromise, misCursosPromise])
+    .then(([cursoRes, misCursosRes]) => {
+      setCurso(cursoRes.data);
+      const yaInscrito = misCursosRes.data.find(
+        (i) => i.cursoId === Number(id) && i.estado === "ACTIVA"
+      );
+      setInscripcion(yaInscrito || null);
+    })
+    .catch(() => setError("No se pudo cargar el curso"))
+    .finally(() => setLoading(false));
+}
 
   useEffect(() => {
     cargarDatos();
