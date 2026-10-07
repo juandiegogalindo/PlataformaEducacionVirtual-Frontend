@@ -6,6 +6,8 @@ import Cursos from "./pages/cursos/Cursos";
 import Registro from "./pages/login/Registro";
 import CursoDetalle from "./pages/cursos/CursoDetalle";
 import Perfil from "./pages/perfil/Perfil";
+import CursoForm from "./pages/cursos/CursoForm";
+import { ROLES_GESTION_CURSOS } from "./auth/roles";
 
 function App() {
   return (
@@ -24,7 +26,23 @@ function App() {
         >
           <Route path="/perfil" element={<Perfil />} />
           <Route path="/cursos" element={<Cursos />} />
+          <Route
+            path="/cursos/nuevo"
+            element={
+              <ProtectedRoute allowedRoles={ROLES_GESTION_CURSOS}>
+                <CursoForm />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/cursos/:id" element={<CursoDetalle />} />
+          <Route
+            path="/cursos/:id/editar"
+            element={
+              <ProtectedRoute allowedRoles={ROLES_GESTION_CURSOS}>
+                <CursoForm />
+              </ProtectedRoute>
+            }
+          />
         </Route>
       </Routes>
     </BrowserRouter>

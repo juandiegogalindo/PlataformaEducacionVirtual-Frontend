@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { listarCursosRequest } from "../../api/cursos";
 import { useAuthStore } from "../../auth/authStore";
+import { ROLES, ROLES_GESTION_CURSOS } from "../../auth/roles";
 
 const estadoColor = {
   ACTIVO: "bg-green-900 text-green-300",
@@ -18,9 +19,9 @@ export default function Cursos() {
     listarCursosRequest()
       .then((res) => {
         let lista = res.data;
-        if (user?.rol === "Docente") {
+        if (user?.rol === ROLES.DOCENTE) {
           lista = lista.filter((curso) => curso.docenteCorreo === user.correo);
-        } else if (user?.rol === "Estudiante") {
+        } else if (user?.rol === ROLES.ESTUDIANTE) {
           lista = lista.filter((curso) => curso.estado === "ACTIVO");
         }
         setCursos(lista);
@@ -34,9 +35,17 @@ export default function Cursos() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-4">
-        {user?.rol === "Docente" ? "Mis cursos" : "Catálogo de Cursos"}
-      </h1>
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold">
+          {user?.rol === ROLES.DOCENTE ? "Mis cursos" : "Catálogo de Cursos"}
+        </h1>
+        {ROLES_GESTION_CURSOS.includes(user?.rol) && (
+          <Link to="/cursos/nuevo" className="bg-black text-white px-4 py-2 rounded font-semibold">
+            Nuevo curso
+          </Link>
+        )}
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {cursos.map((curso) => (
           <Link

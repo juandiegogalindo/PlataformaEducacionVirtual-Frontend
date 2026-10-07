@@ -6,7 +6,7 @@ export default function ProtectedRoute({ children, allowedRoles }) {
 
   if (!accessToken) return <Navigate to="/login" replace />;
   if (allowedRoles && !allowedRoles.includes(user?.rol)) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/cursos" replace />;
   }
   return children;
 }

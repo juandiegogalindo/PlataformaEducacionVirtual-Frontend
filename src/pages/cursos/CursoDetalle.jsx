@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
-import { verCursoRequest } from "../../api/cursos";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { verCursoRequest, archivarCursoRequest } from "../../api/cursos";
 import { inscribirseRequest, misCursosRequest, cancelarInscripcionRequest } from "../../api/inscripciones";
 import { useAuthStore } from "../../auth/authStore";
-
-
+import { ROLES, puedeGestionarCurso } from "../../auth/roles";
 
 export default function CursoDetalle() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
 
   const [curso, setCurso] = useState(null);
@@ -18,23 +18,23 @@ export default function CursoDetalle() {
   const [accionLoading, setAccionLoading] = useState(false);
 
   function cargarDatos() {
-  setLoading(true);
+    setLoading(true);
 
-  const cursoPromise = verCursoRequest(id);
-  const misCursosPromise =
-    user?.rol === "Estudiante" ? misCursosRequest() : Promise.resolve({ data: [] });
+    const cursoPromise = verCursoRequest(id);
+    const misCursosPromise =
+      user?.rol === ROLES.ESTUDIANTE ? misCursosRequest() : Promise.resolve({ data: [] });
 
-  Promise.all([cursoPromise, misCursosPromise])
-    .then(([cursoRes, misCursosRes]) => {
-      setCurso(cursoRes.data);
-      const yaInscrito = misCursosRes.data.find(
-        (i) => i.cursoId === Number(id) && i.estado === "ACTIVA"
-      );
-      setInscripcion(yaInscrito || null);
-    })
-    .catch(() => setError("No se pudo cargar el curso"))
-    .finally(() => setLoading(false));
-}
+    Promise.all([cursoPromise, misCursosPromise])
+      .then(([cursoRes, misCursosRes]) => {
+        setCurso(cursoRes.data);
+        const yaInscrito = misCursosRes.data.find(
+          (i) => i.cursoId === Number(id) && i.estado === "ACTIVA"
+        );
+        setInscripcion(yaInscrito || null);
+      })
+      .catch(() => setError("No se pudo cargar el curso"))
+      .finally(() => setLoading(false));
+  }
 
   useEffect(() => {
     cargarDatos();
@@ -68,6 +68,20 @@ export default function CursoDetalle() {
     }
   }
 
+  async function handleArchivar() {
+    if (!window.confirm("¿Archivar este curso? Dejará de aparecer en el catálogo de los estudiantes.")) return;
+    setAccionMsg("");
+    setAccionLoading(true);
+    try {
+      await archivarCursoRequest(id);
+      navigate("/cursos");
+    } catch (err) {
+      setAccionMsg(err.response?.data?.mensaje || "No se pudo archivar el curso");
+    } finally {
+      setAccionLoading(false);
+    }
+  }
+
   if (loading) return <p className="text-gray-400">Cargando curso...</p>;
   if (error) return <p className="text-red-500">{error}</p>;
 
@@ -88,14 +102,32 @@ export default function CursoDetalle() {
         <p><span className="text-gray-500">Estado:</span> {curso.estado}</p>
       </div>
 
-      {user?.rol === "Estudiante" && (
+      {accionMsg && <p className="text-sm mb-3">{accionMsg}</p>}
+
+      {puedeGestionarCurso(user, curso) && (
+        <div className="flex gap-3">
+          <Link to={`/cursos/${curso.id}/editar`} className="border border-black px-4 py-2 rounded">
+            Editar curso
+          </Link>
+          {curso.estado === "ACTIVO" && (
+            <button
+              onClick={handleArchivar}
+              disabled={accionLoading}
+              className="bg-red-700 text-white px-4 py-2 rounded"
+            >
+              {accionLoading ? "Archivando..." : "Archivar curso"}
+            </button>
+          )}
+        </div>
+      )}
+
+      {user?.rol === ROLES.ESTUDIANTE && (
         <div>
-          {accionMsg && <p className="text-sm mb-2">{accionMsg}</p>}
           {inscripcion ? (
             <button
               onClick={handleCancelar}
               disabled={accionLoading}
-              className="bg-red-900 text-red-300 px-4 py-2 rounded"
+              className="bg-red-700 text-white px-4 py-2 rounded"
             >
               {accionLoading ? "Cancelando..." : "Cancelar inscripción"}
             </button>
@@ -103,7 +135,7 @@ export default function CursoDetalle() {
             <button
               onClick={handleInscribirse}
               disabled={accionLoading}
-              className="bg-white text-black px-4 py-2 rounded font-semibold"
+              className="bg-black text-white px-4 py-2 rounded font-semibold"
             >
               {accionLoading ? "Inscribiendo..." : "Inscribirme"}
             </button>
