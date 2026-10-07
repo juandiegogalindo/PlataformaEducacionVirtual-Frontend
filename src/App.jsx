@@ -5,9 +5,10 @@ import Login from "./pages/login/Login";
 import Cursos from "./pages/cursos/Cursos";
 import Registro from "./pages/login/Registro";
 import CursoDetalle from "./pages/cursos/CursoDetalle";
+import MisInscripciones from "./pages/cursos/MisInscripciones";
 import Perfil from "./pages/perfil/Perfil";
 import CursoForm from "./pages/cursos/CursoForm";
-import { ROLES_GESTION_CURSOS } from "./auth/roles";
+import { ROLES, ROLES_GESTION_CURSOS } from "./auth/roles";
 
 function App() {
   return (
@@ -40,6 +41,14 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={ROLES_GESTION_CURSOS}>
                 <CursoForm />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/inscripciones"
+            element={
+              <ProtectedRoute allowedRoles={[ROLES.ESTUDIANTE]}>
+                <MisInscripciones />
               </ProtectedRoute>
             }
           />
