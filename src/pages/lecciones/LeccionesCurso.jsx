@@ -5,6 +5,7 @@ import {
   actualizarLeccionRequest,
   eliminarLeccionRequest,
 } from "../../api/lecciones";
+import { verProgresoRequest, marcarProgresoRequest } from "../../api/progreso";
 
 const TIPOS_CONTENIDO = ["TEXTO", "VIDEO"];
 
@@ -31,9 +32,11 @@ export default function LeccionesCurso({ cursoId, puedeGestionar, inscrito }) {
   const puedeVer = puedeGestionar || inscrito;
 
   const [lecciones, setLecciones] = useState([]);
+  const [progreso, setProgreso] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [recarga, setRecarga] = useState(0);
+  const [marcandoId, setMarcandoId] = useState(null);
 
   // null = formulario cerrado, "nueva" = creando, objeto lección = editando
   const [formAbierto, setFormAbierto] = useState(null);
@@ -48,16 +51,23 @@ export default function LeccionesCurso({ cursoId, puedeGestionar, inscrito }) {
 
   useEffect(() => {
     if (!puedeVer) return;
-    listarLeccionesRequest(cursoId)
-      .then((res) => {
+
+    const leccionesPromise = listarLeccionesRequest(cursoId);
+    const progresoPromise = inscrito
+      ? verProgresoRequest(cursoId).catch(() => ({ data: null }))
+      : Promise.resolve({ data: null });
+
+    Promise.all([leccionesPromise, progresoPromise])
+      .then(([leccionesRes, progresoRes]) => {
         setError("");
-        setLecciones([...res.data].sort((a, b) => a.orden - b.orden));
+        setLecciones([...leccionesRes.data].sort((a, b) => a.orden - b.orden));
+        setProgreso(progresoRes.data);
       })
       .catch((err) =>
         setError(err.response?.data?.mensaje || "No se pudieron cargar las lecciones")
       )
       .finally(() => setLoading(false));
-  }, [cursoId, puedeVer, recarga]);
+  }, [cursoId, puedeVer, inscrito, recarga]);
 
   function abrirNueva() {
     setForm(formVacio(siguienteOrden));
@@ -138,6 +148,19 @@ export default function LeccionesCurso({ cursoId, puedeGestionar, inscrito }) {
     }
   }
 
+  async function handleToggleCompletada(leccion, completado) {
+    setAccionMsg("");
+    setMarcandoId(leccion.id);
+    try {
+      await marcarProgresoRequest(cursoId, leccion.id, completado);
+      setRecarga((r) => r + 1);
+    } catch (err) {
+      setAccionMsg(err.response?.data?.mensaje || "No se pudo actualizar tu progreso");
+    } finally {
+      setMarcandoId(null);
+    }
+  }
+
   if (!puedeVer) {
     return (
       <section className="mt-8">
@@ -153,6 +176,11 @@ export default function LeccionesCurso({ cursoId, puedeGestionar, inscrito }) {
     ? TIPOS_CONTENIDO
     : [...TIPOS_CONTENIDO, form.tipoContenido];
 
+  const mostrarProgreso = inscrito && progreso !== null;
+  const total = progreso?.totalLecciones ?? 0;
+  const completadas = progreso?.leccionesCompletadas ?? 0;
+  const porcentaje = total > 0 ? Math.round((completadas / total) * 100) : 0;
+
   return (
     <section className="mt-8">
       <div className="flex justify-between items-center mb-3">
@@ -165,6 +193,17 @@ export default function LeccionesCurso({ cursoId, puedeGestionar, inscrito }) {
       </div>
 
       {accionMsg && <p className="text-sm mb-3">{accionMsg}</p>}
+
+      {mostrarProgreso && total > 0 && (
+        <div className="mb-4">
+          <p className="text-sm mb-1">
+            Avance: {completadas} de {total} lecciones ({porcentaje} %)
+          </p>
+          <div className="w-full h-2 bg-gray-200 rounded">
+            <div className="h-2 bg-black rounded" style={{ width: `${porcentaje}%` }} />
+          </div>
+        </div>
+      )}
 
       {formAbierto && (
         <form onSubmit={handleSubmit} className="border border-gray-300 rounded p-4 mb-4 flex flex-col gap-3">
@@ -232,42 +271,65 @@ export default function LeccionesCurso({ cursoId, puedeGestionar, inscrito }) {
         </p>
       ) : (
         <ol className="flex flex-col gap-2">
-          {lecciones.map((leccion) => (
-            <li key={leccion.id} className="border border-gray-700 rounded p-3">
-              <details>
-                <summary className="cursor-pointer">
-                  <span className="font-semibold">{leccion.orden}. {leccion.titulo}</span>
-                  <span className="text-xs text-gray-500 ml-2">
-                    {leccion.tipoContenido} · {leccion.duracionMinutos} min
-                  </span>
-                </summary>
-                <div className="mt-3 text-sm">
-                  {esUrl(leccion.contenido) ? (
-                    <a href={leccion.contenido} target="_blank" rel="noopener noreferrer" className="underline">
-                      Abrir contenido
-                    </a>
-                  ) : (
-                    <p className="whitespace-pre-wrap">{leccion.contenido}</p>
-                  )}
-                </div>
-              </details>
+          {lecciones.map((leccion) => {
+            const detalle = progreso?.detalle?.find((d) => d.leccionId === leccion.id);
+            const completada = Boolean(detalle?.completado);
 
-              {puedeGestionar && (
-                <div className="flex gap-4 mt-3 text-sm">
-                  <button onClick={() => abrirEdicion(leccion)} className="underline">
-                    Editar
-                  </button>
-                  <button
-                    onClick={() => handleEliminar(leccion)}
-                    disabled={borrandoId === leccion.id}
-                    className="text-red-700 underline"
-                  >
-                    {borrandoId === leccion.id ? "Eliminando..." : "Eliminar"}
-                  </button>
-                </div>
-              )}
-            </li>
-          ))}
+            return (
+              <li key={leccion.id} className="border border-gray-700 rounded p-3">
+                <details>
+                  <summary className="cursor-pointer">
+                    <span className="font-semibold">{leccion.orden}. {leccion.titulo}</span>
+                    {mostrarProgreso && completada && <span className="text-green-700 ml-2">✓</span>}
+                    <span className="text-xs text-gray-500 ml-2">
+                      {leccion.tipoContenido} · {leccion.duracionMinutos} min
+                    </span>
+                  </summary>
+                  <div className="mt-3 text-sm">
+                    {esUrl(leccion.contenido) ? (
+                      <a href={leccion.contenido} target="_blank" rel="noopener noreferrer" className="underline">
+                        Abrir contenido
+                      </a>
+                    ) : (
+                      <p className="whitespace-pre-wrap">{leccion.contenido}</p>
+                    )}
+                  </div>
+                </details>
+
+                {mostrarProgreso && (
+                  <label className="flex items-center gap-2 mt-3 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={completada}
+                      disabled={marcandoId === leccion.id}
+                      onChange={(e) => handleToggleCompletada(leccion, e.target.checked)}
+                    />
+                    Completada
+                    {detalle?.fechaCompletado && (
+                      <span className="text-xs text-gray-500">
+                        el {detalle.fechaCompletado.slice(0, 10)}
+                      </span>
+                    )}
+                  </label>
+                )}
+
+                {puedeGestionar && (
+                  <div className="flex gap-4 mt-3 text-sm">
+                    <button onClick={() => abrirEdicion(leccion)} className="underline">
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => handleEliminar(leccion)}
+                      disabled={borrandoId === leccion.id}
+                      className="text-red-700 underline"
+                    >
+                      {borrandoId === leccion.id ? "Eliminando..." : "Eliminar"}
+                    </button>
+                  </div>
+                )}
+              </li>
+            );
+          })}
         </ol>
       )}
     </section>
