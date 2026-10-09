@@ -12,3 +12,7 @@ export function puedeGestionarCurso(user, curso) {
   if (user.rol === ROLES.COORDINADOR || user.rol === ROLES.ADMINISTRADOR) return true;
   return user.rol === ROLES.DOCENTE && curso.docenteCorreo === user.correo;
 }
+
+export function esDocenteDelCurso(user, curso) {
+  return user?.rol === ROLES.DOCENTE && curso?.docenteCorreo === user?.correo;
+}

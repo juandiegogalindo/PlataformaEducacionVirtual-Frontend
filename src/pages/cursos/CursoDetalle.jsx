@@ -3,12 +3,18 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { verCursoRequest, archivarCursoRequest } from "../../api/cursos";
 import { inscribirseRequest, misCursosRequest, cancelarInscripcionRequest } from "../../api/inscripciones";
 import { useAuthStore } from "../../auth/authStore";
-import { ROLES, puedeGestionarCurso } from "../../auth/roles";
+import { ROLES, puedeGestionarCurso, esDocenteDelCurso } from "../../auth/roles";
+import LeccionesCurso from "../lecciones/LeccionesCurso";
 
 export default function CursoDetalle() {
   const { id } = useParams();
+  return <DetalleCurso key={id} id={id} />;
+}
+
+function DetalleCurso({ id }) {
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
+  const rol = user?.rol;
 
   const [curso, setCurso] = useState(null);
   const [inscripcion, setInscripcion] = useState(null);
@@ -16,16 +22,16 @@ export default function CursoDetalle() {
   const [error, setError] = useState("");
   const [accionMsg, setAccionMsg] = useState("");
   const [accionLoading, setAccionLoading] = useState(false);
+  const [recarga, setRecarga] = useState(0);
 
-  function cargarDatos() {
-    setLoading(true);
-
+  useEffect(() => {
     const cursoPromise = verCursoRequest(id);
     const misCursosPromise =
-      user?.rol === ROLES.ESTUDIANTE ? misCursosRequest() : Promise.resolve({ data: [] });
+      rol === ROLES.ESTUDIANTE ? misCursosRequest() : Promise.resolve({ data: [] });
 
     Promise.all([cursoPromise, misCursosPromise])
       .then(([cursoRes, misCursosRes]) => {
+        setError("");
         setCurso(cursoRes.data);
         const yaInscrito = misCursosRes.data.find(
           (i) => i.cursoId === Number(id) && i.estado === "ACTIVA"
@@ -34,11 +40,7 @@ export default function CursoDetalle() {
       })
       .catch(() => setError("No se pudo cargar el curso"))
       .finally(() => setLoading(false));
-  }
-
-  useEffect(() => {
-    cargarDatos();
-  }, [id]);
+  }, [id, rol, recarga]);
 
   async function handleInscribirse() {
     setAccionMsg("");
@@ -46,7 +48,7 @@ export default function CursoDetalle() {
     try {
       await inscribirseRequest(Number(id));
       setAccionMsg("¡Te inscribiste correctamente!");
-      cargarDatos();
+      setRecarga((r) => r + 1);
     } catch (err) {
       setAccionMsg(err.response?.data?.mensaje || "No se pudo completar la inscripción");
     } finally {
@@ -60,7 +62,7 @@ export default function CursoDetalle() {
     try {
       await cancelarInscripcionRequest(inscripcion.id);
       setAccionMsg("Inscripción cancelada");
-      cargarDatos();
+      setRecarga((r) => r + 1);
     } catch (err) {
       setAccionMsg(err.response?.data?.mensaje || "No se pudo cancelar la inscripción");
     } finally {
@@ -121,7 +123,7 @@ export default function CursoDetalle() {
         </div>
       )}
 
-      {user?.rol === ROLES.ESTUDIANTE && (
+      {rol === ROLES.ESTUDIANTE && (
         <div>
           {inscripcion ? (
             <button
@@ -142,6 +144,14 @@ export default function CursoDetalle() {
           )}
         </div>
       )}
+
+      <LeccionesCurso
+        cursoId={curso.id}
+        puedeGestionar={esDocenteDelCurso(user, curso)}
+        inscrito={Boolean(inscripcion)}
+      />
+
+      {/* Aquí irá <RecursosCurso /> (paquete de Miguel) */}
     </div>
   );
 }
