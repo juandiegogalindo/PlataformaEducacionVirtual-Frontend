@@ -7,12 +7,14 @@ export const ROLES = {
 
 export const ROLES_GESTION_CURSOS = [ROLES.DOCENTE, ROLES.COORDINADOR, ROLES.ADMINISTRADOR];
 
-export function puedeGestionarCurso(user, curso) {
-  if (!user || !curso) return false;
-  if (user.rol === ROLES.COORDINADOR || user.rol === ROLES.ADMINISTRADOR) return true;
-  return user.rol === ROLES.DOCENTE && curso.docenteCorreo === user.correo;
+export function esCoordinadorOAdmin(user) {
+  return user?.rol === ROLES.COORDINADOR || user?.rol === ROLES.ADMINISTRADOR;
 }
 
 export function esDocenteDelCurso(user, curso) {
-  return user?.rol === ROLES.DOCENTE && curso?.docenteCorreo === user?.correo;
+  return user?.rol === ROLES.DOCENTE && curso?.docenteId === user?.id;
+}
+
+export function puedeGestionarCurso(user, curso) {
+  return esCoordinadorOAdmin(user) || esDocenteDelCurso(user, curso);
 }

@@ -19,3 +19,15 @@ export function actualizarCursoRequest(id, datos) {
 export function archivarCursoRequest(id) {
   return api.delete(`/api/cursos/${id}`);
 }
+
+export function activarCursoRequest(id) {
+  return api.patch(`/api/cursos/${id}/activar`);
+}
+
+export function misCursosDocenteRequest(estado) {
+  return api.get("/api/docentes/mis-cursos", { params: estado ? { estado } : {} });
+}
+
+export function listarCursosGestionRequest(estado) {
+  return api.get("/api/gestion/cursos", { params: estado ? { estado } : {} });
+}

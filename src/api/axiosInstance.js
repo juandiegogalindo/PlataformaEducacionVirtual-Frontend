@@ -5,7 +5,6 @@ const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
 });
 
-// Rutas públicas de auth: no necesitan (ni deben llevar) el token de acceso
 const RUTAS_SIN_TOKEN = ["/api/auth/login", "/api/auth/registro", "/api/auth/refresh"];
 
 function esRutaAuth(url) {
