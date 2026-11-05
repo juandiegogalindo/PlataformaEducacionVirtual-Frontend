@@ -21,11 +21,20 @@ export const useAuthStore = create((set, get) => ({
 
   refreshAccessToken: async () => {
     const refreshToken = get().refreshToken;
+    if (!refreshToken) throw new Error("No hay refresh token");
+
     const { data } = await refreshRequest(refreshToken);
     localStorage.setItem("accessToken", data.accessToken);
     localStorage.setItem("refreshToken", data.refreshToken);
     set({ accessToken: data.accessToken, refreshToken: data.refreshToken });
     return data.accessToken;
+  },
+
+  limpiarSesion: () => {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("user");
+    set({ user: null, accessToken: null, refreshToken: null });
   },
 
   logout: async () => {
@@ -35,13 +44,10 @@ export const useAuthStore = create((set, get) => ({
     } catch {
       // si el backend ya no responde, igual limpiamos la sesión local
     }
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
-    localStorage.removeItem("user");
-    set({ user: null, accessToken: null, refreshToken: null });
+    get().limpiarSesion();
   },
 
-    setUser: (user) => {
+  setUser: (user) => {
     localStorage.setItem("user", JSON.stringify(user));
     set({ user });
   },

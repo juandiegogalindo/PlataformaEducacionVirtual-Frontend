@@ -5,9 +5,18 @@ const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
 });
 
+// Rutas públicas de auth: no necesitan (ni deben llevar) el token de acceso
+const RUTAS_SIN_TOKEN = ["/api/auth/login", "/api/auth/registro", "/api/auth/refresh"];
+
+function esRutaAuth(url) {
+  return Boolean(url?.startsWith("/api/auth/"));
+}
+
 api.interceptors.request.use((config) => {
   const token = useAuthStore.getState().accessToken;
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  if (token && !RUTAS_SIN_TOKEN.includes(config.url)) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
   return config;
 });
 
@@ -27,7 +36,7 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (error.response?.status === 401 && !originalRequest._retry && !esRutaAuth(originalRequest.url)) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           pendingQueue.push({ resolve, reject });
@@ -47,7 +56,7 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshError) {
         resolveQueue(refreshError, null);
-        useAuthStore.getState().logout();
+        useAuthStore.getState().limpiarSesion();
         window.location.href = "/login";
         return Promise.reject(refreshError);
       } finally {
