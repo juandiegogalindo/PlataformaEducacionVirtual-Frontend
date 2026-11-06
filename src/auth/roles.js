@@ -1,7 +1,7 @@
 export const ROLES = {
   ESTUDIANTE: "Estudiante",
   DOCENTE: "Docente",
-  COORDINADOR: "Coordinador",
+  COORDINADOR: "CoordinadorAcademico",
   ADMINISTRADOR: "Administrador",
 };
 
