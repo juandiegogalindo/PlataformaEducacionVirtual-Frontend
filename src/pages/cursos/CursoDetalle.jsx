@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
-import { verCursoRequest, archivarCursoRequest } from "../../api/cursos";
+import { useParams, Link } from "react-router-dom";
+import { verCursoRequest, archivarCursoRequest, activarCursoRequest } from "../../api/cursos";
 import { inscribirseRequest, misCursosRequest, cancelarInscripcionRequest } from "../../api/inscripciones";
 import { useAuthStore } from "../../auth/authStore";
 import { ROLES, puedeGestionarCurso, esDocenteDelCurso } from "../../auth/roles";
+import { textoSesion } from "../../utils/horarios";
+import { mensajeError } from "../../utils/errores";
 import LeccionesCurso from "../lecciones/LeccionesCurso";
 
 export default function CursoDetalle() {
@@ -12,7 +14,6 @@ export default function CursoDetalle() {
 }
 
 function DetalleCurso({ id }) {
-  const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const rol = user?.rol;
 
@@ -38,54 +39,45 @@ function DetalleCurso({ id }) {
         );
         setInscripcion(yaInscrito || null);
       })
-      .catch(() => setError("No se pudo cargar el curso"))
+      .catch((err) => setError(mensajeError(err, "No se pudo cargar el curso")))
       .finally(() => setLoading(false));
   }, [id, rol, recarga]);
 
-  async function handleInscribirse() {
+  async function ejecutar(accion, mensajeExito, mensajeFallo) {
     setAccionMsg("");
     setAccionLoading(true);
     try {
-      await inscribirseRequest(Number(id));
-      setAccionMsg("¡Te inscribiste correctamente!");
+      await accion();
+      setAccionMsg(mensajeExito);
       setRecarga((r) => r + 1);
     } catch (err) {
-      setAccionMsg(err.response?.data?.mensaje || "No se pudo completar la inscripción");
+      setAccionMsg(mensajeError(err, mensajeFallo));
     } finally {
       setAccionLoading(false);
     }
   }
 
-  async function handleCancelar() {
-    setAccionMsg("");
-    setAccionLoading(true);
-    try {
-      await cancelarInscripcionRequest(inscripcion.id);
-      setAccionMsg("Inscripción cancelada");
-      setRecarga((r) => r + 1);
-    } catch (err) {
-      setAccionMsg(err.response?.data?.mensaje || "No se pudo cancelar la inscripción");
-    } finally {
-      setAccionLoading(false);
-    }
+  function handleInscribirse() {
+    ejecutar(() => inscribirseRequest(Number(id)), "¡Te inscribiste correctamente!", "No se pudo completar la inscripción");
   }
 
-  async function handleArchivar() {
+  function handleCancelar() {
+    ejecutar(() => cancelarInscripcionRequest(inscripcion.id), "Inscripción cancelada", "No se pudo cancelar la inscripción");
+  }
+
+  function handleArchivar() {
     if (!window.confirm("¿Archivar este curso? Dejará de aparecer en el catálogo de los estudiantes.")) return;
-    setAccionMsg("");
-    setAccionLoading(true);
-    try {
-      await archivarCursoRequest(id);
-      navigate("/cursos");
-    } catch (err) {
-      setAccionMsg(err.response?.data?.mensaje || "No se pudo archivar el curso");
-    } finally {
-      setAccionLoading(false);
-    }
+    ejecutar(() => archivarCursoRequest(id), "Curso archivado", "No se pudo archivar el curso");
+  }
+
+  function handleReactivar() {
+    ejecutar(() => activarCursoRequest(id), "Curso reactivado", "No se pudo reactivar el curso");
   }
 
   if (loading) return <p className="text-gray-400">Cargando curso...</p>;
   if (error) return <p className="text-red-500">{error}</p>;
+
+  const cursoActivo = curso.estado === "ACTIVO";
 
   return (
     <div>
@@ -95,13 +87,32 @@ function DetalleCurso({ id }) {
       <h1 className="text-2xl font-bold mt-2 mb-1">{curso.nombre}</h1>
       <p className="text-gray-400 mb-4">{curso.descripcion}</p>
 
-      <div className="grid grid-cols-2 gap-4 text-sm mb-6">
+      {!cursoActivo && (
+        <p className="text-sm bg-gray-100 border border-gray-300 rounded p-3 mb-4">
+          Este curso está {curso.estado === "ARCHIVADO" ? "archivado" : "inactivo"} y no admite nuevas inscripciones.
+        </p>
+      )}
+
+      <div className="grid grid-cols-2 gap-4 text-sm mb-4">
         <p><span className="text-gray-500">Docente:</span> {curso.docenteNombre} ({curso.docenteCorreo})</p>
         <p><span className="text-gray-500">Creado por:</span> {curso.creadoPorNombre}</p>
         <p><span className="text-gray-500">Fecha inicio:</span> {curso.fechaInicio}</p>
         <p><span className="text-gray-500">Fecha fin:</span> {curso.fechaFin}</p>
         <p><span className="text-gray-500">Cupo máximo:</span> {curso.cupoMaximo}</p>
         <p><span className="text-gray-500">Estado:</span> {curso.estado}</p>
+      </div>
+
+      <div className="mb-6">
+        <h2 className="text-sm font-semibold mb-1">Horario de clases</h2>
+        {curso.horarios?.length > 0 ? (
+          <ul className="text-sm flex flex-col gap-1">
+            {curso.horarios.map((sesion) => (
+              <li key={`${sesion.diaSemana}-${sesion.horaInicio}`}>{textoSesion(sesion)}</li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-gray-500">Este curso aún no tiene horario registrado.</p>
+        )}
       </div>
 
       {accionMsg && <p className="text-sm mb-3">{accionMsg}</p>}
@@ -120,6 +131,15 @@ function DetalleCurso({ id }) {
               {accionLoading ? "Archivando..." : "Archivar curso"}
             </button>
           )}
+          {curso.estado === "ARCHIVADO" && (
+            <button
+              onClick={handleReactivar}
+              disabled={accionLoading}
+              className="bg-black text-white px-4 py-2 rounded font-semibold"
+            >
+              {accionLoading ? "Reactivando..." : "Reactivar curso"}
+            </button>
+          )}
         </div>
       )}
 
@@ -134,13 +154,15 @@ function DetalleCurso({ id }) {
               {accionLoading ? "Cancelando..." : "Cancelar inscripción"}
             </button>
           ) : (
-            <button
-              onClick={handleInscribirse}
-              disabled={accionLoading}
-              className="bg-black text-white px-4 py-2 rounded font-semibold"
-            >
-              {accionLoading ? "Inscribiendo..." : "Inscribirme"}
-            </button>
+            cursoActivo && (
+              <button
+                onClick={handleInscribirse}
+                disabled={accionLoading}
+                className="bg-black text-white px-4 py-2 rounded font-semibold"
+              >
+                {accionLoading ? "Inscribiendo..." : "Inscribirme"}
+              </button>
+            )
           )}
         </div>
       )}
