@@ -1,13 +1,43 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
+import { Check, Pencil, Archive, RotateCcw, X } from "lucide-react";
 import { verCursoRequest, archivarCursoRequest, activarCursoRequest } from "../../api/cursos";
 import { inscribirseRequest, misCursosRequest, cancelarInscripcionRequest } from "../../api/inscripciones";
 import { useAuthStore } from "../../auth/authStore";
 import { ROLES, puedeGestionarCurso, esDocenteDelCurso } from "../../auth/roles";
 import { textoSesion } from "../../utils/horarios";
 import { mensajeError } from "../../utils/errores";
+import Alert from "../../components/ui/Alert";
+import Badge from "../../components/ui/Badge";
 import LeccionesCurso from "../lecciones/LeccionesCurso";
 import InscritosCurso from "../estudiantes/InscritosCurso";
+
+function iniciales(nombre = "") {
+  return nombre
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0].toUpperCase())
+    .join("");
+}
+
+function Tarjeta({ titulo, children }) {
+  return (
+    <section className="rounded-xl border border-slate-200 bg-white p-5">
+      {titulo && <h2 className="text-xs font-semibold mb-3">{titulo}</h2>}
+      {children}
+    </section>
+  );
+}
+
+function Fila({ etiqueta, children }) {
+  return (
+    <div className="flex items-center justify-between border-t border-slate-100 py-2.5 text-xs first:border-t-0">
+      <span className="text-slate-500">{etiqueta}</span>
+      <span className="font-semibold text-right">{children}</span>
+    </div>
+  );
+}
 
 export default function CursoDetalle() {
   const { id } = useParams();
@@ -22,7 +52,7 @@ function DetalleCurso({ id }) {
   const [inscripcion, setInscripcion] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [accionMsg, setAccionMsg] = useState("");
+  const [accion, setAccion] = useState(null); // { variant, titulo, texto }
   const [accionLoading, setAccionLoading] = useState(false);
   const [recarga, setRecarga] = useState(0);
 
@@ -44,15 +74,17 @@ function DetalleCurso({ id }) {
       .finally(() => setLoading(false));
   }, [id, rol, recarga]);
 
-  async function ejecutar(accion, mensajeExito, mensajeFallo) {
-    setAccionMsg("");
+  async function ejecutar(accionFn, mensajeExito, mensajeFallo) {
+    setAccion(null);
     setAccionLoading(true);
     try {
-      await accion();
-      setAccionMsg(mensajeExito);
+      await accionFn();
+      setAccion({ variant: "success", titulo: mensajeExito });
       setRecarga((r) => r + 1);
     } catch (err) {
-      setAccionMsg(mensajeError(err, mensajeFallo));
+      // 409 = conflicto (p. ej. inscripción duplicada): advertencia en vez de error
+      const variant = err.response?.status === 409 ? "warning" : "error";
+      setAccion({ variant, titulo: mensajeError(err, mensajeFallo) });
     } finally {
       setAccionLoading(false);
     }
@@ -75,108 +107,165 @@ function DetalleCurso({ id }) {
     ejecutar(() => activarCursoRequest(id), "Curso reactivado", "No se pudo reactivar el curso");
   }
 
-  if (loading) return <p className="text-gray-400">Cargando curso...</p>;
-  if (error) return <p className="text-red-500">{error}</p>;
+  if (loading) return <p className="text-sm text-slate-400">Cargando curso...</p>;
+  if (error) return <Alert variant="error" title="No se pudo cargar el curso">{error}</Alert>;
 
   const cursoActivo = curso.estado === "ACTIVO";
+  const puedeGestionar = puedeGestionarCurso(user, curso);
+  const esEstudiante = rol === ROLES.ESTUDIANTE;
+
+  const subtitulo = [
+    curso.codigo,
+    curso.creditos != null && `${curso.creditos} créditos`,
+    `${curso.fechaInicio} – ${curso.fechaFin}`,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <div>
-      <Link to="/cursos" className="text-sm text-gray-400 hover:underline">
-        &larr; Volver al catálogo
-      </Link>
-      <h1 className="text-2xl font-bold mt-2 mb-1">{curso.nombre}</h1>
-      <p className="text-gray-400 mb-4">{curso.descripcion}</p>
+      <h1 className="text-xl font-semibold">{curso.nombre}</h1>
+      <p className="text-xs text-slate-500 mb-5">{subtitulo}</p>
+
+      {accion && <Alert variant={accion.variant} title={accion.titulo} className="mb-4" />}
 
       {!cursoActivo && (
-        <p className="text-sm bg-gray-100 border border-gray-300 rounded p-3 mb-4">
+        <Alert variant="warning" title="Curso no disponible" className="mb-4">
           Este curso está {curso.estado === "ARCHIVADO" ? "archivado" : "inactivo"} y no admite nuevas inscripciones.
-        </p>
+        </Alert>
       )}
 
-      <div className="grid grid-cols-2 gap-4 text-sm mb-4">
-        <p><span className="text-gray-500">Docente:</span> {curso.docenteNombre} ({curso.docenteCorreo})</p>
-        <p><span className="text-gray-500">Creado por:</span> {curso.creadoPorNombre}</p>
-        <p><span className="text-gray-500">Fecha inicio:</span> {curso.fechaInicio}</p>
-        <p><span className="text-gray-500">Fecha fin:</span> {curso.fechaFin}</p>
-        <p><span className="text-gray-500">Cupo máximo:</span> {curso.cupoMaximo}</p>
-        <p><span className="text-gray-500">Estado:</span> {curso.estado}</p>
-      </div>
+      <div className="grid gap-4 lg:grid-cols-[2fr_1fr] items-start">
+        {/* Columna izquierda: información del curso */}
+        <Tarjeta titulo="Descripción del curso">
+          <p className="text-xs text-slate-500 mb-4">{curso.descripcion}</p>
 
-      <div className="mb-6">
-        <h2 className="text-sm font-semibold mb-1">Horario de clases</h2>
-        {curso.horarios?.length > 0 ? (
-          <ul className="text-sm flex flex-col gap-1">
-            {curso.horarios.map((sesion) => (
-              <li key={`${sesion.diaSemana}-${sesion.horaInicio}`}>{textoSesion(sesion)}</li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-sm text-gray-500">Este curso aún no tiene horario registrado.</p>
-        )}
-      </div>
+          {curso.codigo && <Fila etiqueta="Código">{curso.codigo}</Fila>}
+          {curso.creditos != null && <Fila etiqueta="Créditos">{curso.creditos}</Fila>}
+          {curso.programa && <Fila etiqueta="Programa académico">{curso.programa}</Fila>}
+          <Fila etiqueta="Fecha de inicio">{curso.fechaInicio}</Fila>
+          <Fila etiqueta="Fecha de fin">{curso.fechaFin}</Fila>
+          <Fila etiqueta="Cupo máximo">{curso.cupoMaximo}</Fila>
+          <Fila etiqueta="Creado por">{curso.creadoPorNombre}</Fila>
+          <Fila etiqueta="Estado">
+            <Badge variant={cursoActivo ? "success" : "neutral"}>
+              {cursoActivo ? (esEstudiante ? "Disponible" : "Activo") : "Archivado"}
+            </Badge>
+          </Fila>
 
-      {accionMsg && <p className="text-sm mb-3">{accionMsg}</p>}
-
-      {puedeGestionarCurso(user, curso) && (
-        <div className="flex gap-3">
-          <Link to={`/cursos/${curso.id}/editar`} className="border border-black px-4 py-2 rounded">
-            Editar curso
-          </Link>
-          {curso.estado === "ACTIVO" && (
-            <button
-              onClick={handleArchivar}
-              disabled={accionLoading}
-              className="bg-red-700 text-white px-4 py-2 rounded"
-            >
-              {accionLoading ? "Archivando..." : "Archivar curso"}
-            </button>
-          )}
-          {curso.estado === "ARCHIVADO" && (
-            <button
-              onClick={handleReactivar}
-              disabled={accionLoading}
-              className="bg-black text-white px-4 py-2 rounded font-semibold"
-            >
-              {accionLoading ? "Reactivando..." : "Reactivar curso"}
-            </button>
-          )}
-        </div>
-      )}
-
-      {rol === ROLES.ESTUDIANTE && (
-        <div>
-          {inscripcion ? (
-            <button
-              onClick={handleCancelar}
-              disabled={accionLoading}
-              className="bg-red-700 text-white px-4 py-2 rounded"
-            >
-              {accionLoading ? "Cancelando..." : "Cancelar inscripción"}
-            </button>
+          <h3 className="text-xs font-semibold mt-5 mb-2">Horario de clases</h3>
+          {curso.horarios?.length > 0 ? (
+            <ul className="flex flex-col gap-1 text-xs text-slate-600">
+              {curso.horarios.map((sesion) => (
+                <li key={`${sesion.diaSemana}-${sesion.horaInicio}`}>{textoSesion(sesion)}</li>
+              ))}
+            </ul>
           ) : (
-            cursoActivo && (
-              <button
-                onClick={handleInscribirse}
-                disabled={accionLoading}
-                className="bg-black text-white px-4 py-2 rounded font-semibold"
-              >
-                {accionLoading ? "Inscribiendo..." : "Inscribirme"}
-              </button>
-            )
+            <p className="text-xs text-slate-500">Este curso aún no tiene horario registrado.</p>
+          )}
+        </Tarjeta>
+
+        {/* Columna derecha */}
+        <div className="flex flex-col gap-4">
+          <Tarjeta titulo="Docente">
+            <div className="flex items-center gap-3">
+              <span className="w-9 h-9 rounded-full bg-slate-200 text-slate-700 text-xs font-semibold grid place-items-center">
+                {iniciales(curso.docenteNombre)}
+              </span>
+              <div className="leading-tight">
+                <p className="text-sm font-semibold">{curso.docenteNombre}</p>
+                <p className="text-[11px] text-slate-500">{curso.docenteCorreo}</p>
+              </div>
+            </div>
+          </Tarjeta>
+
+          {esEstudiante && (inscripcion || cursoActivo) && (
+            <Tarjeta titulo={inscripcion ? "Tu inscripción" : "Confirmar inscripción"}>
+              {inscripcion ? (
+                <>
+                  <p className="text-xs text-slate-500 mb-4">Ya estás inscrito en este curso.</p>
+                  <button
+                    onClick={handleCancelar}
+                    disabled={accionLoading}
+                    className="w-full flex items-center justify-center gap-1.5 rounded-md border border-red-200 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50"
+                  >
+                    <X size={14} />
+                    {accionLoading ? "Cancelando..." : "Cancelar inscripción"}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <p className="text-xs text-slate-500 mb-4">
+                    Al confirmar quedará inscrito en este curso.
+                  </p>
+                  <div className="flex flex-col gap-2">
+                    <button
+                      onClick={handleInscribirse}
+                      disabled={accionLoading}
+                      className="w-full flex items-center justify-center gap-1.5 rounded-md bg-primary py-2 text-xs font-semibold text-white hover:bg-primary-dark disabled:bg-primary/40"
+                    >
+                      <Check size={14} />
+                      {accionLoading ? "Inscribiendo..." : "Confirmar inscripción"}
+                    </button>
+                    <Link
+                      to="/cursos"
+                      className="w-full text-center rounded-md border border-slate-200 py-2 text-xs font-semibold hover:bg-slate-50"
+                    >
+                      Cancelar
+                    </Link>
+                  </div>
+                </>
+              )}
+            </Tarjeta>
+          )}
+
+          {puedeGestionar && (
+            <Tarjeta titulo="Gestión del curso">
+              <div className="flex flex-col gap-2">
+                <Link
+                  to={`/cursos/${curso.id}/editar`}
+                  className="w-full flex items-center justify-center gap-1.5 rounded-md bg-primary py-2 text-xs font-semibold text-white hover:bg-primary-dark"
+                >
+                  <Pencil size={14} />
+                  Editar curso
+                </Link>
+                {curso.estado === "ACTIVO" && (
+                  <button
+                    onClick={handleArchivar}
+                    disabled={accionLoading}
+                    className="w-full flex items-center justify-center gap-1.5 rounded-md border border-red-200 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50"
+                  >
+                    <Archive size={14} />
+                    {accionLoading ? "Archivando..." : "Archivar curso"}
+                  </button>
+                )}
+                {curso.estado === "ARCHIVADO" && (
+                  <button
+                    onClick={handleReactivar}
+                    disabled={accionLoading}
+                    className="w-full flex items-center justify-center gap-1.5 rounded-md border border-slate-200 py-2 text-xs font-semibold hover:bg-slate-50 disabled:opacity-50"
+                  >
+                    <RotateCcw size={14} />
+                    {accionLoading ? "Reactivando..." : "Reactivar curso"}
+                  </button>
+                )}
+              </div>
+            </Tarjeta>
           )}
         </div>
-      )}
+      </div>
 
-      <LeccionesCurso
-        cursoId={curso.id}
-        puedeGestionar={esDocenteDelCurso(user, curso)}
-        inscrito={Boolean(inscripcion)}
-      />
+      <div className="mt-6 flex flex-col gap-6">
+        <LeccionesCurso
+          cursoId={curso.id}
+          puedeGestionar={esDocenteDelCurso(user, curso)}
+          inscrito={Boolean(inscripcion)}
+        />
 
-      {puedeGestionarCurso(user, curso) && <InscritosCurso cursoId={curso.id} />} 
+        {puedeGestionar && <InscritosCurso cursoId={curso.id} />}
 
-      {/* Aquí irá <RecursosCurso /> (paquete de Miguel) */}
+        {/* Aquí irá <RecursosCurso /> (paquete de Miguel) */}
+      </div>
     </div>
   );
 }
