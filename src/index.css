@@ -1,1 +1,15 @@
 @import "tailwindcss";
+
+@theme {
+  --color-primary: #1447e6;
+  --color-primary-dark: #1239b8;
+  --color-sidebar: #0f172a;
+  --color-sidebar-hover: #1e293b;
+  --color-surface: #f8fafc;
+  --color-ink: #0f172a;
+  --font-sans: "Inter", "Segoe UI", system-ui, sans-serif;
+}
+
+body {
+  @apply bg-surface text-ink font-sans antialiased;
+}

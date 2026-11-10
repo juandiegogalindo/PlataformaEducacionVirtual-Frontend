@@ -1,43 +1,42 @@
-import { Link, useNavigate } from "react-router-dom";
+import { NavLink } from "react-router-dom";
+import { BookOpen, LayoutGrid, MessageSquare, ClipboardList, User } from "lucide-react";
 import { useAuthStore } from "../../auth/authStore";
 import { ROLES } from "../../auth/roles";
 
-const links = [
-  { to: "/cursos", label: "Cursos" },
-  { to: "/inscripciones", label: "Mis inscripciones", roles: [ROLES.ESTUDIANTE] },
-  { to: "/foro", label: "Foro" },
-  { to: "/evaluaciones", label: "Evaluaciones" },
-  { to: "/perfil", label: "Perfil" },
-];
-
 export default function Sidebar() {
   const user = useAuthStore((state) => state.user);
-  const logout = useAuthStore((state) => state.logout);
-  const navigate = useNavigate();
+  const esEstudiante = user?.rol === ROLES.ESTUDIANTE;
 
-  const linksVisibles = links.filter((link) => !link.roles || link.roles.includes(user?.rol));
-
-  async function handleLogout() {
-    await logout();
-    navigate("/login");
-  }
+  const links = [
+    esEstudiante && { to: "/inscripciones", label: "Mis cursos", icon: BookOpen },
+    { to: "/cursos", label: esEstudiante ? "Catálogo de cursos" : "Cursos", icon: LayoutGrid },
+    { to: "/evaluaciones", label: "Evaluaciones", icon: ClipboardList },
+    { to: "/foro", label: "Foro", icon: MessageSquare },
+    { to: "/perfil", label: "Perfil", icon: User },
+  ].filter(Boolean);
 
   return (
-    <aside className="w-56 h-screen bg-black text-white flex flex-col p-4 gap-2">
-      <h1 className="text-lg font-bold mb-4">Bit Criollo</h1>
+    <aside className="w-56 shrink-0 bg-sidebar text-slate-300 py-5">
+      <p className="px-5 mb-3 text-[10px] tracking-widest text-slate-500">MENÚ</p>
 
-      {linksVisibles.map((link) => (
-        <Link key={link.to} to={link.to} className="py-2 px-3 rounded hover:bg-gray-800">
-          {link.label}
-        </Link>
-      ))}
-
-      <div className="mt-auto flex flex-col gap-2">
-        {user && <p className="text-sm text-gray-400 px-3">{user.nombre} ({user.rol})</p>}
-        <button onClick={handleLogout} className="py-2 px-3 rounded hover:bg-gray-800 text-left text-red-400">
-          Cerrar sesión
-        </button>
-      </div>
+      <nav className="flex flex-col gap-1 px-3">
+        {links.map(({ to, label, icon: Icon }) => (
+          <NavLink
+            key={to}
+            to={to}
+            className={({ isActive }) =>
+              `flex items-center gap-2.5 px-3 py-2 rounded-md text-sm border-l-2 transition-colors ${
+                isActive
+                  ? "bg-sidebar-hover text-white border-primary"
+                  : "border-transparent hover:bg-sidebar-hover hover:text-white"
+              }`
+            }
+          >
+            <Icon size={16} />
+            {label}
+          </NavLink>
+        ))}
+      </nav>
     </aside>
   );
 }
