@@ -2,37 +2,42 @@ import { useState } from "react";
 import { urlFoto } from "../utils/urls";
 
 function iniciales(usuario) {
-  const texto = `${usuario?.nombre?.[0] ?? ""}${usuario?.apellido?.[0] ?? ""}`.toUpperCase();
-  return texto || "?";
+  const nombre = (usuario?.nombre || "").trim().split(" ").filter(Boolean);
+  const apellido = (usuario?.apellido || "").trim().split(" ").filter(Boolean);
+
+  if (nombre.length && apellido.length) return (nombre[0][0] + apellido[0][0]).toUpperCase();
+  return nombre
+    .slice(0, 2)
+    .map((p) => p[0])
+    .join("")
+    .toUpperCase() || "?";
 }
 
-function AvatarInterno({ src, usuario, tamano }) {
-  const [fallo, setFallo] = useState(false);
-  const estilo = { width: tamano, height: tamano };
+export default function Avatar({ usuario, tamano = 40, className = "" }) {
+  const src = urlFoto(usuario?.fotoPerfilUrl, usuario?.fotoVersion);
+  const [falloSrc, setFalloSrc] = useState(null);
+  const mostrarFoto = src && falloSrc !== src;
 
-  if (!src || fallo) {
+  const estilo = { width: tamano, height: tamano, fontSize: Math.max(10, Math.round(tamano * 0.36)) };
+
+  if (mostrarFoto) {
     return (
-      <div
-        style={{ ...estilo, fontSize: tamano / 2.5 }}
-        className="rounded-full bg-gray-300 text-gray-700 flex items-center justify-center font-semibold shrink-0"
-      >
-        {iniciales(usuario)}
-      </div>
+      <img
+        src={src}
+        alt={usuario?.nombre ? `Foto de ${usuario.nombre}` : "Foto de perfil"}
+        style={estilo}
+        onError={() => setFalloSrc(src)}
+        className={`shrink-0 rounded-full object-cover bg-slate-200 ${className}`}
+      />
     );
   }
 
   return (
-    <img
-      src={src}
-      alt="Foto de perfil"
+    <span
       style={estilo}
-      className="rounded-full object-cover shrink-0"
-      onError={() => setFallo(true)}
-    />
+      className={`grid shrink-0 place-items-center rounded-full bg-slate-700 font-semibold text-white ${className}`}
+    >
+      {iniciales(usuario)}
+    </span>
   );
-}
-
-export default function Avatar({ usuario, tamano = 64 }) {
-  const src = urlFoto(usuario?.fotoPerfilUrl, usuario?.fotoVersion);
-  return <AvatarInterno key={src ?? "sin-foto"} src={src} usuario={usuario} tamano={tamano} />;
 }
