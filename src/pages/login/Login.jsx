@@ -5,6 +5,7 @@ import { useAuthStore } from "../../auth/authStore";
 import AuthLayout from "../../components/layout/AuthLayout";
 import Input from "../../components/ui/Input";
 import Alert from "../../components/ui/Alert";
+import { ROLES } from "../../auth/roles";
 
 function formatearTiempo(segundos) {
   const m = String(Math.floor(segundos / 60)).padStart(2, "0");
@@ -36,8 +37,8 @@ export default function Login() {
     setFallo(false);
     setLoading(true);
     try {
-      await login(correo, contrasena);
-      navigate("/cursos");
+      const usuario = await login(correo, contrasena);
+      navigate(usuario.rol === ROLES.ADMINISTRADOR ? "/admin/usuarios" : "/cursos");
     } catch (err) {
       const data = err.response?.data;
       // Ajusta estos campos a lo que realmente devuelva tu backend

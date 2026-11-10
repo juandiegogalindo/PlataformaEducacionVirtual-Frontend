@@ -9,6 +9,9 @@ import MisInscripciones from "./pages/cursos/MisInscripciones";
 import Perfil from "./pages/perfil/Perfil";
 import CursoForm from "./pages/cursos/CursoForm";
 import { ROLES, ROLES_GESTION_CURSOS } from "./auth/roles";
+import AdminLayout from "./pages/admin/AdminLayout";
+import Usuarios from "./pages/admin/Usuarios";
+import UsuarioForm from "./pages/admin/UsuarioForm";
 
 function App() {
   return (
@@ -25,6 +28,15 @@ function App() {
             </ProtectedRoute>
           }
         >
+          <Route path="/admin" element={
+            <ProtectedRoute allowedRoles={[ROLES.ADMINISTRADOR]}>
+              <AdminLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<Navigate to="usuarios" replace />} />
+            <Route path="usuarios" element={<Usuarios />} />
+            <Route path="usuarios/nuevo" element={<UsuarioForm />} />
+          </Route>
           <Route path="/perfil" element={<Perfil />} />
           <Route path="/cursos" element={<Cursos />} />
           <Route
