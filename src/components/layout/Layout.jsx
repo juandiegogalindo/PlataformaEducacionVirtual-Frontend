@@ -16,7 +16,7 @@ export default function Layout() {
   }
 
   return (
-    <div className="h-dvh flex flex-col">
+    <div className="fixed inset-0 flex flex-col overflow-hidden">
       <header className="h-14 shrink-0 bg-white border-b border-slate-200 flex items-center justify-between gap-3 px-4 sm:px-6">
 
         <div className="flex items-center gap-2">
@@ -56,7 +56,7 @@ export default function Layout() {
       <div className="flex flex-col sm:flex-row flex-1 min-h-0">
         <Sidebar />
 
-        <main className="flex-1 min-w-0 overflow-y-auto p-4 sm:p-8">
+        <main className="min-h-0 min-w-0 flex-1 overflow-y-auto p-4 sm:p-8">
           <Breadcrumb />
           <Outlet />
         </main>
