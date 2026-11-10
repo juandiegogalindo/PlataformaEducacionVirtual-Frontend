@@ -19,6 +19,9 @@ import EvaluacionDetalle from "./pages/evaluaciones/EvaluacionDetalle";
 import Calificaciones from "./pages/resultados/Calificaciones";
 import CalificacionesCurso from "./pages/resultados/CalificacionesCurso";
 
+// Recursos Bibliográficos
+import RecursosBibliograficos from "./pages/recursosBibliograficos/RecursosBibliograficos";
+
 function App() {
   return (
     <BrowserRouter>
@@ -34,15 +37,19 @@ function App() {
             </ProtectedRoute>
           }
         >
-          <Route path="/admin" element={
-            <ProtectedRoute allowedRoles={[ROLES.ADMINISTRADOR]}>
-              <AdminLayout />
-            </ProtectedRoute>
-          }>
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute allowedRoles={[ROLES.ADMINISTRADOR]}>
+                <AdminLayout />
+              </ProtectedRoute>
+            }
+          >
             <Route index element={<Navigate to="usuarios" replace />} />
             <Route path="usuarios" element={<Usuarios />} />
             <Route path="usuarios/nuevo" element={<UsuarioForm />} />
           </Route>
+
           <Route path="/perfil" element={<Perfil />} />
           <Route path="/calificaciones" element={<ProtectedRoute allowedRoles={[ROLES.ESTUDIANTE, ROLES.DOCENTE]}><Calificaciones /></ProtectedRoute>} />
           <Route path="/cursos/:cursoId/calificaciones" element={<ProtectedRoute allowedRoles={[ROLES.DOCENTE]}><CalificacionesCurso /></ProtectedRoute>} />
@@ -50,7 +57,9 @@ function App() {
           <Route path="/cursos/:cursoId/evaluaciones" element={<ProtectedRoute allowedRoles={ROLES_EVALUACIONES}><EvaluacionesCurso /></ProtectedRoute>} />
           <Route path="/cursos/:cursoId/evaluaciones/nueva" element={<ProtectedRoute allowedRoles={[ROLES.DOCENTE]}><EvaluacionForm /></ProtectedRoute>} />
           <Route path="/cursos/:cursoId/evaluaciones/:tipo/:evaluacionId" element={<ProtectedRoute allowedRoles={ROLES_EVALUACIONES}><EvaluacionDetalle /></ProtectedRoute>} />
+
           <Route path="/cursos" element={<Cursos />} />
+
           <Route
             path="/cursos/nuevo"
             element={
@@ -59,7 +68,20 @@ function App() {
               </ProtectedRoute>
             }
           />
+
           <Route path="/cursos/:id" element={<CursoDetalle />} />
+
+          
+          <Route
+            path="/cursos/:cursoId/recursos"
+            element={
+              <ProtectedRoute allowedRoles={[ROLES.DOCENTE, ROLES.COORDINADOR]}>
+                <RecursosBibliograficos />
+              </ProtectedRoute>
+            }
+          />
+     
+
           <Route
             path="/cursos/:id/editar"
             element={
@@ -68,6 +90,7 @@ function App() {
               </ProtectedRoute>
             }
           />
+
           <Route
             path="/inscripciones"
             element={
