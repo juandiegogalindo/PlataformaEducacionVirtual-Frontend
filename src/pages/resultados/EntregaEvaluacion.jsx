@@ -5,7 +5,7 @@ import { mensajeError } from "../../utils/errores";
 import Alert from "../../components/ui/Alert";
 import { Textarea } from "../../components/ui/Input";
 import DetalleResultado, { EstadoResultado } from "./DetalleResultado";
-import { restriccionEntrega, resultadosEvaluacion, validarContenido } from "./resultadoUtils";
+import { restriccionEntrega, resultadosEvaluacion, validarContenido } from "../../utils/resultadoUtils";
 
 export default function EntregaEvaluacion({ evaluacion, tipo, onGuardando }) {
   const [datos, setDatos] = useState({ resultados: [], loading: true, error: "" });

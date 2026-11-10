@@ -1,6 +1,6 @@
 import Badge from "../../components/ui/Badge";
-import { fechaEvaluacion } from "../evaluaciones/evaluacionUtils";
-import { ESTADOS_RESULTADO, notaResultado } from "./resultadoUtils";
+import { fechaEvaluacion } from "../../utils/evaluacionUtils";
+import { ESTADOS_RESULTADO, notaResultado } from "../../utils/resultadoUtils";
 
 export function EstadoResultado({ resultado }) {
   const estado = ESTADOS_RESULTADO[resultado.estado];

@@ -6,7 +6,7 @@ import { mensajeError } from "../../utils/errores";
 import Alert from "../../components/ui/Alert";
 import Input, { Select } from "../../components/ui/Input";
 import DetalleResultado, { EstadoResultado } from "./DetalleResultado";
-import { notaResultado } from "./resultadoUtils";
+import { notaResultado } from "../../utils/resultadoUtils";
 
 export default function MisCalificaciones() {
   const [datos, setDatos] = useState({ resultados: [], cursos: [], loading: true, error: "" });

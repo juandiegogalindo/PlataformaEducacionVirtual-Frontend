@@ -6,8 +6,8 @@ import { esDocenteDelCurso, ROLES } from "../../auth/roles";
 import Alert from "../../components/ui/Alert";
 import Badge from "../../components/ui/Badge";
 import Input, { Select } from "../../components/ui/Input";
-import useEvaluacionesCurso from "./useEvaluacionesCurso";
-import { ESTADOS_EVALUACION, porcentaje, pesoTotal, rutaEvaluacion } from "./evaluacionUtils";
+import useEvaluacionesCurso from "../../utils/useEvaluacionesCurso";
+import { ESTADOS_EVALUACION, porcentaje, pesoTotal, rutaEvaluacion } from "../../utils/evaluacionUtils";
 
 export default function EvaluacionesCurso() {
   const { cursoId } = useParams();

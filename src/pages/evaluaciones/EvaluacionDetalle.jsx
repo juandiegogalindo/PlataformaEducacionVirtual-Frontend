@@ -8,7 +8,7 @@ import EntregaEvaluacion from "../resultados/EntregaEvaluacion";
 import { mensajeError } from "../../utils/errores";
 import Alert from "../../components/ui/Alert";
 import Badge from "../../components/ui/Badge";
-import { ESTADOS_EVALUACION, fechaEvaluacion, porcentaje } from "./evaluacionUtils";
+import { ESTADOS_EVALUACION, fechaEvaluacion, porcentaje } from "../../utils/evaluacionUtils";
 
 export default function EvaluacionDetalle() {
   const { cursoId, tipo, evaluacionId } = useParams();

@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { crearUsuarioRequest } from "../../api/admin";
-import { prepararUsuario, TIPOS_USUARIO } from "./adminUtils";
+import { prepararUsuario, TIPOS_USUARIO } from "../../utils/adminUtils";
 import { mensajeError } from "../../utils/errores";
 import Input, { Select, Textarea } from "../../components/ui/Input";
 import Alert from "../../components/ui/Alert";

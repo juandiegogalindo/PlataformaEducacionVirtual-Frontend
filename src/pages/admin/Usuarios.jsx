@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { cambiarEstadoUsuarioRequest, listarUsuariosRequest } from "../../api/admin";
 import { useAuthStore } from "../../auth/authStore";
-import { nombreRol } from "./adminUtils";
+import { nombreRol } from "../../utils/adminUtils";
 import { mensajeError } from "../../utils/errores";
 import Avatar from "../../components/Avatar";
 import Alert from "../../components/ui/Alert";

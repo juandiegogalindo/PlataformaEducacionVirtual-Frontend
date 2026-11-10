@@ -8,7 +8,7 @@ import { mensajeError } from "../../utils/errores";
 import Alert from "../../components/ui/Alert";
 import Input, { Select, Textarea } from "../../components/ui/Input";
 import DetalleResultado, { EstadoResultado } from "./DetalleResultado";
-import { notaResultado, validarCalificacion } from "./resultadoUtils";
+import { notaResultado, validarCalificacion } from "../../utils/resultadoUtils";
 
 export default function CalificacionesCurso() {
   const { cursoId } = useParams();

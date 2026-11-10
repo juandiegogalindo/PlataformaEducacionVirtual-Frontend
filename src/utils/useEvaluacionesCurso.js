@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { verCursoRequest } from "../../api/cursos";
-import { listarEvaluacionesRequest } from "../../api/evaluaciones";
-import { mensajeError } from "../../utils/errores";
+import { verCursoRequest } from "../api/cursos";
+import { listarEvaluacionesRequest } from "../api/evaluaciones";
+import { mensajeError } from "./errores";
 
 export default function useEvaluacionesCurso(cursoId) {
   const [datos, setDatos] = useState({ curso: null, evaluaciones: [], loading: true, error: "" });

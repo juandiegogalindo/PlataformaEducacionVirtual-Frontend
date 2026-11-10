@@ -7,8 +7,8 @@ import { esDocenteDelCurso } from "../../auth/roles";
 import { mensajeError } from "../../utils/errores";
 import Alert from "../../components/ui/Alert";
 import Input, { Select, Textarea } from "../../components/ui/Input";
-import useEvaluacionesCurso from "./useEvaluacionesCurso";
-import { porcentaje, pesoTotal, prepararEvaluacion, rutaEvaluacion, validarEvaluacion } from "./evaluacionUtils";
+import useEvaluacionesCurso from "../../utils/useEvaluacionesCurso";
+import { porcentaje, pesoTotal, prepararEvaluacion, rutaEvaluacion, validarEvaluacion } from "../../utils/evaluacionUtils";
 
 const inicial = {
   titulo: "", descripcion: "", pesoPorcentual: "", instrucciones: "", fechaLimite: "",
