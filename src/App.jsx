@@ -16,6 +16,8 @@ import Evaluaciones from "./pages/evaluaciones/Evaluaciones";
 import EvaluacionesCurso from "./pages/evaluaciones/EvaluacionesCurso";
 import EvaluacionForm from "./pages/evaluaciones/EvaluacionForm";
 import EvaluacionDetalle from "./pages/evaluaciones/EvaluacionDetalle";
+import Calificaciones from "./pages/resultados/Calificaciones";
+import CalificacionesCurso from "./pages/resultados/CalificacionesCurso";
 
 function App() {
   return (
@@ -42,6 +44,8 @@ function App() {
             <Route path="usuarios/nuevo" element={<UsuarioForm />} />
           </Route>
           <Route path="/perfil" element={<Perfil />} />
+          <Route path="/calificaciones" element={<ProtectedRoute allowedRoles={[ROLES.ESTUDIANTE, ROLES.DOCENTE]}><Calificaciones /></ProtectedRoute>} />
+          <Route path="/cursos/:cursoId/calificaciones" element={<ProtectedRoute allowedRoles={[ROLES.DOCENTE]}><CalificacionesCurso /></ProtectedRoute>} />
           <Route path="/evaluaciones" element={<ProtectedRoute allowedRoles={ROLES_EVALUACIONES}><Evaluaciones /></ProtectedRoute>} />
           <Route path="/cursos/:cursoId/evaluaciones" element={<ProtectedRoute allowedRoles={ROLES_EVALUACIONES}><EvaluacionesCurso /></ProtectedRoute>} />
           <Route path="/cursos/:cursoId/evaluaciones/nueva" element={<ProtectedRoute allowedRoles={[ROLES.DOCENTE]}><EvaluacionForm /></ProtectedRoute>} />

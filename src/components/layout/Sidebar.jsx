@@ -5,7 +5,8 @@ import {
   MessageSquare,
   ClipboardList,
   User,
-  Users
+  Users,
+  Award
 } from "lucide-react";
 
 import { useAuthStore } from "../../auth/authStore";
@@ -15,6 +16,7 @@ export default function Sidebar() {
   const user = useAuthStore((state) => state.user);
   const esEstudiante = user?.rol === ROLES.ESTUDIANTE;
   const enEvaluaciones = Boolean(useMatch("/cursos/:cursoId/evaluaciones/*"));
+  const enCalificaciones = Boolean(useMatch("/cursos/:cursoId/calificaciones"));
   const { pathname } = useLocation();
 
   const links = [
@@ -38,6 +40,11 @@ export default function Sidebar() {
       label: "Evaluaciones",
       icon: ClipboardList
     },
+    [ROLES.ESTUDIANTE, ROLES.DOCENTE].includes(user?.rol) && {
+      to: "/calificaciones",
+      label: "Calificaciones",
+      icon: Award
+    },
     {
       to: "/foro",
       label: "Foro",
@@ -60,7 +67,8 @@ export default function Sidebar() {
         {links.map(({ to, label, icon: Icon }) => {
           const isActive = to === "/evaluaciones"
             ? pathname === to || enEvaluaciones
-            : (pathname === to || pathname.startsWith(`${to}/`)) && !(to === "/cursos" && enEvaluaciones);
+            : to === "/calificaciones" ? pathname === to || enCalificaciones
+            : (pathname === to || pathname.startsWith(`${to}/`)) && !(to === "/cursos" && (enEvaluaciones || enCalificaciones));
           return <Link
             key={to}
             to={to}

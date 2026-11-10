@@ -3,7 +3,8 @@ import { Link, useLocation, useParams } from "react-router-dom";
 import { verEvaluacionRequest, publicarEvaluacionRequest } from "../../api/evaluaciones";
 import { verCursoRequest } from "../../api/cursos";
 import { useAuthStore } from "../../auth/authStore";
-import { esDocenteDelCurso } from "../../auth/roles";
+import { esDocenteDelCurso, ROLES } from "../../auth/roles";
+import EntregaEvaluacion from "../resultados/EntregaEvaluacion";
 import { mensajeError } from "../../utils/errores";
 import Alert from "../../components/ui/Alert";
 import Badge from "../../components/ui/Badge";
@@ -25,6 +26,7 @@ function Detalle({ cursoId, tipo, evaluacionId }) {
   const [datos, setDatos] = useState({ curso: null, evaluacion: null, loading: true, error: "" });
   const [revision, setRevision] = useState(0);
   const [publicando, setPublicando] = useState(false);
+  const [entregando, setEntregando] = useState(false);
   const [errorPublicacion, setErrorPublicacion] = useState("");
   const [aviso, setAviso] = useState(location.state?.mensaje || "");
   const enviando = useRef(false);
@@ -75,15 +77,18 @@ function Detalle({ cursoId, tipo, evaluacionId }) {
       {loading ? <p className="mt-5 text-sm text-slate-400" role="status">Cargando evaluación...</p> : error ? <div className="mt-5"><Alert variant="error" title={error} /><button onClick={recargar} className="mt-3 text-xs font-semibold text-primary">Reintentar</button></div> : <>
         <div className="my-5 flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0"><h1 className="break-words text-xl font-semibold">{evaluacion.titulo}</h1><p className="mt-1 text-xs text-slate-500">{curso.nombre} · {tipo === "tareas" ? "Tarea" : "Examen"}</p></div>
-          <button className="rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-semibold hover:bg-slate-50 disabled:opacity-50" onClick={recargar} disabled={publicando}>Actualizar</button>
+          <button className="rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-semibold hover:bg-slate-50 disabled:opacity-50" onClick={recargar} disabled={publicando || entregando}>Actualizar</button>
         </div>
         {aviso && <Alert variant="success" title={aviso} className="mb-4" />}
         {errorPublicacion && <Alert variant="error" title={errorPublicacion} className="mb-4" />}
         <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(240px,1fr)]">
-          <section className="space-y-5 rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
+          <div><section className="space-y-5 rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
             <div><h2 className="mb-2 text-sm font-semibold">Descripción</h2><p className="whitespace-pre-wrap break-words text-xs leading-relaxed text-slate-600">{evaluacion.descripcion || "Sin descripción."}</p></div>
             {tipo === "tareas" && <div><h2 className="mb-2 text-sm font-semibold">Instrucciones</h2><p className="whitespace-pre-wrap break-words text-xs leading-relaxed text-slate-600">{evaluacion.instrucciones || "Sin instrucciones adicionales."}</p></div>}
           </section>
+          {user?.rol === ROLES.ESTUDIANTE && <EntregaEvaluacion evaluacion={evaluacion} tipo={tipo} onGuardando={setEntregando} />}
+          {esDocenteDelCurso(user, curso) && <Link to={`/cursos/${cursoId}/calificaciones?evaluacion=${evaluacionId}`} className="mt-4 inline-block rounded-md border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-primary hover:bg-slate-50">Revisar y calificar entregas</Link>}
+          </div>
           <aside className="rounded-xl border border-slate-200 bg-white p-5">
             <h2 className="mb-2 text-sm font-semibold">Información</h2>
             <dl className="text-xs">

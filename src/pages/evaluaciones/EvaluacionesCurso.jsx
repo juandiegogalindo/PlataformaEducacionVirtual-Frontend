@@ -31,7 +31,7 @@ function ListadoCurso({ cursoId }) {
       <Link to="/evaluaciones" className="text-xs text-slate-500 hover:underline">← Cambiar de curso</Link>
       <div className="my-5 flex flex-wrap items-center justify-between gap-3">
         <div><h1 className="text-xl font-semibold">Evaluaciones del curso</h1><p className="text-xs text-slate-500">{curso?.nombre}</p></div>
-        {puedeCrear && !loading && !error && <Link to={`/cursos/${cursoId}/evaluaciones/nueva`} className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-xs font-semibold text-white hover:bg-primary-dark"><Plus size={14} /> Crear evaluación</Link>}
+        {puedeCrear && !loading && !error && <div className="flex flex-wrap gap-2"><Link to={`/cursos/${cursoId}/calificaciones`} className="rounded-md border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-primary hover:bg-slate-50">Calificaciones del curso</Link><Link to={`/cursos/${cursoId}/evaluaciones/nueva`} className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-xs font-semibold text-white hover:bg-primary-dark"><Plus size={14} /> Crear evaluación</Link></div>}
       </div>
       {location.state?.mensaje && <Alert variant="success" title={location.state.mensaje} className="mb-4" />}
       {loading ? <p className="text-sm text-slate-400" role="status">Cargando evaluaciones...</p> : error ? (
