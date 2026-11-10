@@ -18,8 +18,8 @@ import EvaluacionForm from "./pages/evaluaciones/EvaluacionForm";
 import EvaluacionDetalle from "./pages/evaluaciones/EvaluacionDetalle";
 import Calificaciones from "./pages/resultados/Calificaciones";
 import CalificacionesCurso from "./pages/resultados/CalificacionesCurso";
-
-// Recursos Bibliográficos
+import ForoPage from "./pages/foro/foro";
+import ForoHilo from "./pages/foro/foroHilo";
 import RecursosBibliograficos from "./pages/recursosBibliograficos/RecursosBibliograficos";
 
 function App() {
@@ -58,6 +58,11 @@ function App() {
           <Route path="/cursos/:cursoId/evaluaciones/nueva" element={<ProtectedRoute allowedRoles={[ROLES.DOCENTE]}><EvaluacionForm /></ProtectedRoute>} />
           <Route path="/cursos/:cursoId/evaluaciones/:tipo/:evaluacionId" element={<ProtectedRoute allowedRoles={ROLES_EVALUACIONES}><EvaluacionDetalle /></ProtectedRoute>} />
 
+          {/* Foro: estudiantes y docentes */}
+          <Route path="/foro" element={<ProtectedRoute allowedRoles={[ROLES.ESTUDIANTE, ROLES.DOCENTE]}><ForoPage /></ProtectedRoute>} />
+          <Route path="/foro/:cursoId" element={<ProtectedRoute allowedRoles={[ROLES.ESTUDIANTE, ROLES.DOCENTE]}><ForoPage /></ProtectedRoute>} />
+          <Route path="/foro/:cursoId/tema/:mensajeId" element={<ProtectedRoute allowedRoles={[ROLES.ESTUDIANTE, ROLES.DOCENTE]}><ForoHilo /></ProtectedRoute>} />
+
           <Route path="/cursos" element={<Cursos />} />
 
           <Route
@@ -71,7 +76,6 @@ function App() {
 
           <Route path="/cursos/:id" element={<CursoDetalle />} />
 
-          
           <Route
             path="/cursos/:cursoId/recursos"
             element={
@@ -80,7 +84,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-     
 
           <Route
             path="/cursos/:id/editar"

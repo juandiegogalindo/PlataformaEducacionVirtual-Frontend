@@ -23,33 +23,38 @@ export default function RecursosBibliograficos({ cursoId: cursoIdProp }) {
   const [formulario, setFormulario] = useState(formularioInicial);
   const [recursoEditando, setRecursoEditando] = useState(null);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
-  const [cargando, setCargando] = useState(true);
+  const [cargadoPara, setCargadoPara] = useState(null); // curso cuyos recursos ya se cargaron
+  const [recarga, setRecarga] = useState(0); // se incrementa para volver a pedir la lista
   const [error, setError] = useState("");
 
-  async function cargarRecursos() {
-    if (!cursoId) return;
+  // Valores derivados: no necesitan estado ni setState dentro del efecto
+  const cargando = Boolean(cursoId) && cargadoPara !== cursoId;
+  const errorCurso = cursoId ? "" : "No se encontró el identificador del curso.";
+  const mensajeError = errorCurso || error;
 
-    try {
-      setCargando(true);
-      setError("");
-
-      const respuesta = await listarRecursosRequest(cursoId);
-      setRecursos(respuesta.data);
-    } catch (err) {
-      setError("No fue posible cargar los recursos bibliográficos.");
-    } finally {
-      setCargando(false);
-    }
-  }
+  const recargar = () => setRecarga((n) => n + 1);
 
   useEffect(() => {
-    if (cursoId) {
-      cargarRecursos();
-    } else {
-      setCargando(false);
-      setError("No se encontró el identificador del curso.");
-    }
-  }, [cursoId]);
+    if (!cursoId) return;
+
+    let cancelado = false;
+    listarRecursosRequest(cursoId)
+      .then((respuesta) => {
+        if (cancelado) return;
+        setRecursos(respuesta.data);
+        setError("");
+      })
+      .catch(() => {
+        if (!cancelado) setError("No fue posible cargar los recursos bibliográficos.");
+      })
+      .finally(() => {
+        if (!cancelado) setCargadoPara(cursoId);
+      });
+
+    return () => {
+      cancelado = true;
+    };
+  }, [cursoId, recarga]);
 
   function manejarCambio(e) {
     setFormulario({
@@ -91,11 +96,7 @@ export default function RecursosBibliograficos({ cursoId: cursoIdProp }) {
       };
 
       if (recursoEditando) {
-        await actualizarRecursoRequest(
-          cursoId,
-          recursoEditando.id,
-          datos
-        );
+        await actualizarRecursoRequest(cursoId, recursoEditando.id, datos);
       } else {
         await crearRecursoRequest(cursoId, datos);
       }
@@ -104,8 +105,8 @@ export default function RecursosBibliograficos({ cursoId: cursoIdProp }) {
       setFormulario(formularioInicial);
       setRecursoEditando(null);
 
-      await cargarRecursos();
-    } catch (err) {
+      recargar();
+    } catch {
       setError("No fue posible guardar el recurso. Verifica los datos.");
     }
   }
@@ -117,8 +118,8 @@ export default function RecursosBibliograficos({ cursoId: cursoIdProp }) {
       setError("");
 
       await eliminarRecursoRequest(cursoId, recursoId);
-      await cargarRecursos();
-    } catch (err) {
+      recargar();
+    } catch {
       setError("No fue posible eliminar el recurso.");
     }
   }
@@ -144,9 +145,9 @@ export default function RecursosBibliograficos({ cursoId: cursoIdProp }) {
         </button>
       </div>
 
-      {error && (
+      {mensajeError && (
         <div className="mb-4 rounded-lg bg-red-50 p-3 text-xs text-red-700">
-          {error}
+          {mensajeError}
         </div>
       )}
 
