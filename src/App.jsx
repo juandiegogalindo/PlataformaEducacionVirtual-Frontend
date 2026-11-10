@@ -8,10 +8,14 @@ import CursoDetalle from "./pages/cursos/CursoDetalle";
 import MisInscripciones from "./pages/cursos/MisInscripciones";
 import Perfil from "./pages/perfil/Perfil";
 import CursoForm from "./pages/cursos/CursoForm";
-import { ROLES, ROLES_GESTION_CURSOS } from "./auth/roles";
+import { ROLES, ROLES_GESTION_CURSOS, ROLES_EVALUACIONES } from "./auth/roles";
 import AdminLayout from "./pages/admin/AdminLayout";
 import Usuarios from "./pages/admin/Usuarios";
 import UsuarioForm from "./pages/admin/UsuarioForm";
+import Evaluaciones from "./pages/evaluaciones/Evaluaciones";
+import EvaluacionesCurso from "./pages/evaluaciones/EvaluacionesCurso";
+import EvaluacionForm from "./pages/evaluaciones/EvaluacionForm";
+import EvaluacionDetalle from "./pages/evaluaciones/EvaluacionDetalle";
 
 function App() {
   return (
@@ -38,6 +42,10 @@ function App() {
             <Route path="usuarios/nuevo" element={<UsuarioForm />} />
           </Route>
           <Route path="/perfil" element={<Perfil />} />
+          <Route path="/evaluaciones" element={<ProtectedRoute allowedRoles={ROLES_EVALUACIONES}><Evaluaciones /></ProtectedRoute>} />
+          <Route path="/cursos/:cursoId/evaluaciones" element={<ProtectedRoute allowedRoles={ROLES_EVALUACIONES}><EvaluacionesCurso /></ProtectedRoute>} />
+          <Route path="/cursos/:cursoId/evaluaciones/nueva" element={<ProtectedRoute allowedRoles={[ROLES.DOCENTE]}><EvaluacionForm /></ProtectedRoute>} />
+          <Route path="/cursos/:cursoId/evaluaciones/:tipo/:evaluacionId" element={<ProtectedRoute allowedRoles={ROLES_EVALUACIONES}><EvaluacionDetalle /></ProtectedRoute>} />
           <Route path="/cursos" element={<Cursos />} />
           <Route
             path="/cursos/nuevo"

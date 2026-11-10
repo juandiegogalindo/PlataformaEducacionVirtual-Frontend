@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { Link, useLocation, useMatch } from "react-router-dom";
 import {
   BookOpen,
   LayoutGrid,
@@ -9,11 +9,13 @@ import {
 } from "lucide-react";
 
 import { useAuthStore } from "../../auth/authStore";
-import { ROLES } from "../../auth/roles";
+import { ROLES, ROLES_EVALUACIONES } from "../../auth/roles";
 
 export default function Sidebar() {
   const user = useAuthStore((state) => state.user);
   const esEstudiante = user?.rol === ROLES.ESTUDIANTE;
+  const enEvaluaciones = Boolean(useMatch("/cursos/:cursoId/evaluaciones/*"));
+  const { pathname } = useLocation();
 
   const links = [
     user?.rol === ROLES.ADMINISTRADOR && {
@@ -31,7 +33,7 @@ export default function Sidebar() {
       label: esEstudiante ? "Catálogo de cursos" : "Cursos",
       icon: LayoutGrid
     },
-    {
+    ROLES_EVALUACIONES.includes(user?.rol) && {
       to: "/evaluaciones",
       label: "Evaluaciones",
       icon: ClipboardList
@@ -55,22 +57,24 @@ export default function Sidebar() {
       </p>
 
       <nav className="flex sm:flex-col gap-1 px-3 overflow-x-auto" aria-label="Menú principal">
-        {links.map(({ to, label, icon: Icon }) => (
-          <NavLink
+        {links.map(({ to, label, icon: Icon }) => {
+          const isActive = to === "/evaluaciones"
+            ? pathname === to || enEvaluaciones
+            : (pathname === to || pathname.startsWith(`${to}/`)) && !(to === "/cursos" && enEvaluaciones);
+          return <Link
             key={to}
             to={to}
-            className={({ isActive }) =>
-              `flex shrink-0 items-center gap-2.5 px-3 py-2 rounded-md text-sm whitespace-nowrap border-l-2 transition-colors ${
+            aria-current={isActive ? "page" : undefined}
+            className={`flex shrink-0 items-center gap-2.5 px-3 py-2 rounded-md text-sm whitespace-nowrap border-l-2 transition-colors ${
                 isActive
                   ? "bg-sidebar-hover text-white border-primary"
                   : "border-transparent hover:bg-sidebar-hover hover:text-white"
-              }`
-            }
+              }`}
           >
             <Icon size={16} />
             {label}
-          </NavLink>
-        ))}
+          </Link>;
+        })}
       </nav>
     </aside>
   );

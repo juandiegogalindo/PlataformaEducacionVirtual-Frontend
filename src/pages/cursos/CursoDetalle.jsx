@@ -256,6 +256,9 @@ function DetalleCurso({ id }) {
       </div>
 
       <div className="mt-6 flex flex-col gap-6">
+        {(esDocenteDelCurso(user, curso) || rol === ROLES.COORDINADOR || Boolean(inscripcion)) && (
+          <Link to={`/cursos/${curso.id}/evaluaciones`} className="self-start rounded-md border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-primary hover:bg-slate-50">Ver evaluaciones del curso</Link>
+        )}
         <LeccionesCurso
           cursoId={curso.id}
           puedeGestionar={esDocenteDelCurso(user, curso)}

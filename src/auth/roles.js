@@ -6,6 +6,7 @@ export const ROLES = {
 };
 
 export const ROLES_GESTION_CURSOS = [ROLES.DOCENTE, ROLES.COORDINADOR, ROLES.ADMINISTRADOR];
+export const ROLES_EVALUACIONES = [ROLES.ESTUDIANTE, ROLES.DOCENTE, ROLES.COORDINADOR];
 
 export function esCoordinadorOAdmin(user) {
   return user?.rol === ROLES.COORDINADOR || user?.rol === ROLES.ADMINISTRADOR;
