@@ -3,6 +3,15 @@ import { BookOpen, LayoutGrid, MessageSquare, ClipboardList, User } from "lucide
 import { useAuthStore } from "../../auth/authStore";
 import { ROLES } from "../../auth/roles";
 
+const links = [
+  { to: "/cursos", label: "Cursos" },
+  { to: "/inscripciones", label: "Mis inscripciones", roles: [ROLES.ESTUDIANTE] },
+  { to: "/foro", label: "Foro" },
+  { to: "/evaluaciones", label: "Evaluaciones" },
+  { to: "/perfil", label: "Perfil" },
+];
+
+
 export default function Sidebar() {
   const user = useAuthStore((state) => state.user);
   const esEstudiante = user?.rol === ROLES.ESTUDIANTE;

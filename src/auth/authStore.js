@@ -1,6 +1,10 @@
 import { create } from "zustand";
 import { loginRequest, refreshRequest, logoutRequest, getPerfilRequest } from "../api/auth";
 
+function conVersionFoto(usuario) {
+  return usuario ? { ...usuario, fotoVersion: Date.now() } : usuario;
+}
+
 export const useAuthStore = create((set, get) => ({
   user: JSON.parse(localStorage.getItem("user")) || null,
   accessToken: localStorage.getItem("accessToken") || null,
@@ -13,10 +17,11 @@ export const useAuthStore = create((set, get) => ({
     set({ accessToken: data.accessToken, refreshToken: data.refreshToken });
 
     const perfil = await getPerfilRequest();
-    localStorage.setItem("user", JSON.stringify(perfil.data));
-    set({ user: perfil.data });
+    const usuario = conVersionFoto(perfil.data);
+    localStorage.setItem("user", JSON.stringify(usuario));
+    set({ user: usuario });
 
-    return perfil.data;
+    return usuario;
   },
 
   refreshAccessToken: async () => {
@@ -48,7 +53,8 @@ export const useAuthStore = create((set, get) => ({
   },
 
   setUser: (user) => {
-    localStorage.setItem("user", JSON.stringify(user));
-    set({ user });
+    const usuario = conVersionFoto(user);
+    localStorage.setItem("user", JSON.stringify(usuario));
+    set({ user: usuario });
   },
 }));
