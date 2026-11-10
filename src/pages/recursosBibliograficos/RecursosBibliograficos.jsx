@@ -15,8 +15,9 @@ const formularioInicial = {
   enlace: "",
 };
 
-export default function RecursosBibliograficos() {
-  const { cursoId } = useParams();
+export default function RecursosBibliograficos({ cursoId: cursoIdProp }) {
+  const params = useParams();
+  const cursoId = cursoIdProp ?? params.cursoId;
 
   const [recursos, setRecursos] = useState([]);
   const [formulario, setFormulario] = useState(formularioInicial);
@@ -26,9 +27,12 @@ export default function RecursosBibliograficos() {
   const [error, setError] = useState("");
 
   async function cargarRecursos() {
+    if (!cursoId) return;
+
     try {
       setCargando(true);
       setError("");
+
       const respuesta = await listarRecursosRequest(cursoId);
       setRecursos(respuesta.data);
     } catch (err) {
@@ -39,7 +43,12 @@ export default function RecursosBibliograficos() {
   }
 
   useEffect(() => {
-    if (cursoId) cargarRecursos();
+    if (cursoId) {
+      cargarRecursos();
+    } else {
+      setCargando(false);
+      setError("No se encontró el identificador del curso.");
+    }
   }, [cursoId]);
 
   function manejarCambio(e) {
@@ -52,6 +61,7 @@ export default function RecursosBibliograficos() {
   function abrirFormulario(recurso = null) {
     if (recurso) {
       setRecursoEditando(recurso);
+
       setFormulario({
         titulo: recurso.titulo || "",
         autor: recurso.autor || "",
@@ -71,6 +81,8 @@ export default function RecursosBibliograficos() {
     e.preventDefault();
 
     try {
+      setError("");
+
       const datos = {
         ...formulario,
         anioPublicacion: formulario.anioPublicacion
@@ -91,6 +103,7 @@ export default function RecursosBibliograficos() {
       setMostrarFormulario(false);
       setFormulario(formularioInicial);
       setRecursoEditando(null);
+
       await cargarRecursos();
     } catch (err) {
       setError("No fue posible guardar el recurso. Verifica los datos.");
@@ -101,6 +114,8 @@ export default function RecursosBibliograficos() {
     if (!window.confirm("¿Deseas eliminar este recurso?")) return;
 
     try {
+      setError("");
+
       await eliminarRecursoRequest(cursoId, recursoId);
       await cargarRecursos();
     } catch (err) {
@@ -109,27 +124,28 @@ export default function RecursosBibliograficos() {
   }
 
   return (
-    <div className="p-6">
+    <section className="rounded-xl border border-slate-200 bg-white p-5">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">
-            Recursos Bibliográficos
-          </h1>
-          <p className="mt-1 text-gray-500">
+          <h2 className="text-sm font-semibold text-slate-800">
+            Recursos bibliográficos
+          </h2>
+
+          <p className="mt-1 text-xs text-slate-500">
             Consulta y administra los recursos del curso.
           </p>
         </div>
 
         <button
           onClick={() => abrirFormulario()}
-          className="rounded-lg bg-blue-600 px-5 py-2.5 font-medium text-white hover:bg-blue-700"
+          className="rounded-md bg-primary px-4 py-2 text-xs font-semibold text-white hover:bg-primary-dark"
         >
           + Agregar recurso
         </button>
       </div>
 
       {error && (
-        <div className="mb-4 rounded-lg bg-red-100 p-3 text-red-700">
+        <div className="mb-4 rounded-lg bg-red-50 p-3 text-xs text-red-700">
           {error}
         </div>
       )}
@@ -137,11 +153,11 @@ export default function RecursosBibliograficos() {
       {mostrarFormulario && (
         <form
           onSubmit={guardarRecurso}
-          className="mb-6 rounded-xl border bg-white p-5 shadow-sm"
+          className="mb-6 rounded-lg border border-slate-200 bg-slate-50 p-4"
         >
-          <h2 className="mb-4 text-lg font-semibold">
+          <h3 className="mb-4 text-sm font-semibold text-slate-800">
             {recursoEditando ? "Editar recurso" : "Nuevo recurso"}
-          </h2>
+          </h3>
 
           <div className="grid gap-4 md:grid-cols-2">
             <input
@@ -150,7 +166,7 @@ export default function RecursosBibliograficos() {
               onChange={manejarCambio}
               placeholder="Título del recurso"
               required
-              className="rounded-lg border p-3"
+              className="rounded-md border border-slate-200 bg-white p-3 text-xs"
             />
 
             <input
@@ -158,7 +174,7 @@ export default function RecursosBibliograficos() {
               value={formulario.autor}
               onChange={manejarCambio}
               placeholder="Autor"
-              className="rounded-lg border p-3"
+              className="rounded-md border border-slate-200 bg-white p-3 text-xs"
             />
 
             <input
@@ -167,14 +183,14 @@ export default function RecursosBibliograficos() {
               value={formulario.anioPublicacion}
               onChange={manejarCambio}
               placeholder="Año de publicación"
-              className="rounded-lg border p-3"
+              className="rounded-md border border-slate-200 bg-white p-3 text-xs"
             />
 
             <select
               name="tipoRecurso"
               value={formulario.tipoRecurso}
               onChange={manejarCambio}
-              className="rounded-lg border p-3"
+              className="rounded-md border border-slate-200 bg-white p-3 text-xs"
             >
               <option value="LIBRO">Libro</option>
               <option value="ARTICULO">Artículo</option>
@@ -190,14 +206,14 @@ export default function RecursosBibliograficos() {
               onChange={manejarCambio}
               placeholder="Enlace del recurso"
               required
-              className="rounded-lg border p-3 md:col-span-2"
+              className="rounded-md border border-slate-200 bg-white p-3 text-xs md:col-span-2"
             />
           </div>
 
-          <div className="mt-5 flex gap-3">
+          <div className="mt-4 flex gap-3">
             <button
               type="submit"
-              className="rounded-lg bg-blue-600 px-5 py-2 text-white hover:bg-blue-700"
+              className="rounded-md bg-primary px-4 py-2 text-xs font-semibold text-white hover:bg-primary-dark"
             >
               Guardar
             </button>
@@ -205,7 +221,7 @@ export default function RecursosBibliograficos() {
             <button
               type="button"
               onClick={() => setMostrarFormulario(false)}
-              className="rounded-lg border px-5 py-2 text-gray-700 hover:bg-gray-100"
+              className="rounded-md border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100"
             >
               Cancelar
             </button>
@@ -213,53 +229,70 @@ export default function RecursosBibliograficos() {
         </form>
       )}
 
-      <div className="overflow-x-auto rounded-xl border bg-white shadow-sm">
+      <div className="overflow-x-auto rounded-lg border border-slate-200">
         {cargando ? (
-          <p className="p-6 text-center text-gray-500">
+          <p className="p-6 text-center text-xs text-slate-500">
             Cargando recursos...
           </p>
         ) : recursos.length === 0 ? (
-          <p className="p-6 text-center text-gray-500">
+          <p className="p-6 text-center text-xs text-slate-500">
             No hay recursos bibliográficos registrados para este curso.
           </p>
         ) : (
-          <table className="w-full text-left text-sm">
-            <thead className="bg-gray-100 text-gray-700">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-slate-50 text-slate-600">
               <tr>
-                <th className="p-4">Título</th>
-                <th className="p-4">Autor</th>
-                <th className="p-4">Año</th>
-                <th className="p-4">Tipo</th>
-                <th className="p-4">Enlace</th>
-                <th className="p-4">Acciones</th>
+                <th className="p-3">Título</th>
+                <th className="p-3">Autor</th>
+                <th className="p-3">Año</th>
+                <th className="p-3">Tipo</th>
+                <th className="p-3">Enlace</th>
+                <th className="p-3">Acciones</th>
               </tr>
             </thead>
 
             <tbody>
               {recursos.map((recurso) => (
-                <tr key={recurso.id} className="border-t hover:bg-gray-50">
-                  <td className="p-4 font-medium">{recurso.titulo}</td>
-                  <td className="p-4">{recurso.autor || "—"}</td>
-                  <td className="p-4">{recurso.anioPublicacion || "—"}</td>
-                  <td className="p-4">{recurso.tipoRecurso}</td>
-                  <td className="p-4">
+                <tr
+                  key={recurso.id}
+                  className="border-t border-slate-100 hover:bg-slate-50"
+                >
+                  <td className="p-3 font-medium text-slate-800">
+                    {recurso.titulo}
+                  </td>
+
+                  <td className="p-3 text-slate-600">
+                    {recurso.autor || "—"}
+                  </td>
+
+                  <td className="p-3 text-slate-600">
+                    {recurso.anioPublicacion || "—"}
+                  </td>
+
+                  <td className="p-3 text-slate-600">
+                    {recurso.tipoRecurso}
+                  </td>
+
+                  <td className="p-3">
                     <a
                       href={recurso.enlace}
                       target="_blank"
-                      rel="noreferrer"
-                      className="text-blue-600 hover:underline"
+                      rel="noopener noreferrer"
+                      className="font-medium text-primary hover:underline"
                     >
                       Ver recurso
                     </a>
                   </td>
-                  <td className="p-4">
+
+                  <td className="p-3">
                     <div className="flex gap-3">
                       <button
                         onClick={() => abrirFormulario(recurso)}
-                        className="font-medium text-blue-600 hover:underline"
+                        className="font-medium text-primary hover:underline"
                       >
                         Editar
                       </button>
+
                       <button
                         onClick={() => eliminarRecurso(recurso.id)}
                         className="font-medium text-red-600 hover:underline"
@@ -274,6 +307,6 @@ export default function RecursosBibliograficos() {
           </table>
         )}
       </div>
-    </div>
+    </section>
   );
 }

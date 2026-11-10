@@ -11,6 +11,7 @@ import Alert from "../../components/ui/Alert";
 import Badge from "../../components/ui/Badge";
 import LeccionesCurso from "../lecciones/LeccionesCurso";
 import InscritosCurso from "../estudiantes/InscritosCurso";
+import RecursosBibliograficos from "../recursosBibliograficos/RecursosBibliograficos";
 
 function iniciales(nombre = "") {
   return nombre
@@ -267,7 +268,7 @@ function DetalleCurso({ id }) {
 
         {puedeGestionar && <InscritosCurso cursoId={curso.id} />}
 
-        {/* Aquí irá <RecursosCurso /> (paquete de Miguel) */}
+      <RecursosBibliograficos cursoId={curso.id} />
       </div>
     </div>
   );
