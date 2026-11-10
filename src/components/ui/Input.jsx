@@ -38,3 +38,13 @@ export function Select({ label, error, required, className = "", children, ...pr
     </label>
   );
 }
+
+export function Textarea({ label, error, required, className = "", ...props }) {
+  return (
+    <label className={`block ${className}`}>
+      <Etiqueta label={label} required={required} />
+      <textarea required={required} {...props} className={clasesCampo(false, !!error)} />
+      {error && <span className="block text-[11px] text-red-600 mt-1">{error}</span>}
+    </label>
+  );
+}

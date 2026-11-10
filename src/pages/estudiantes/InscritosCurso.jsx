@@ -1,20 +1,40 @@
 import { Fragment, useEffect, useRef, useState } from "react";
+import { CheckCircle2, Circle, ChevronDown, ChevronUp } from "lucide-react";
 import { listarInscritosRequest, verProgresoEstudianteRequest } from "../../api/estudiantes";
 import { mensajeError } from "../../utils/errores";
+import Alert from "../../components/ui/Alert";
+import Badge from "../../components/ui/Badge";
+import { Select } from "../../components/ui/Input";
+
+function iniciales(nombre = "") {
+  return nombre
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0].toUpperCase())
+    .join("");
+}
 
 function BarraAvance({ completadas, total }) {
   const porcentaje = total > 0 ? Math.round((completadas / total) * 100) : 0;
   return (
     <div className="min-w-32">
-      <div className="w-full h-2 bg-gray-200 rounded">
-        <div className="h-2 bg-black rounded" style={{ width: `${porcentaje}%` }} />
+      <div className="h-1.5 w-full rounded-full bg-slate-100">
+        <div className="h-1.5 rounded-full bg-primary" style={{ width: `${porcentaje}%` }} />
       </div>
-      <p className="text-xs text-gray-500 mt-1">
+      <p className="mt-1 text-[11px] text-slate-400">
         {completadas} de {total} ({porcentaje} %)
       </p>
     </div>
   );
 }
+
+const estadoBadge = {
+  ACTIVA: { variant: "success", label: "Activa" },
+  CANCELADA: { variant: "neutral", label: "Cancelada" },
+};
+
+const thClase = "px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-slate-400";
 
 export default function InscritosCurso({ cursoId }) {
   const [inscritos, setInscritos] = useState([]);
@@ -85,24 +105,28 @@ export default function InscritosCurso({ cursoId }) {
   }
 
   function renderDetalle() {
-    if (detalleLoading) return <p className="text-gray-400">Cargando avance...</p>;
-    if (detalleError) return <p className="text-red-500">{detalleError}</p>;
+    if (detalleLoading) return <p className="text-xs text-slate-400">Cargando avance...</p>;
+    if (detalleError) return <Alert variant="error" title={detalleError} />;
     if (!detalle) return null;
     if (detalle.detalle.length === 0) {
-      return <p className="text-gray-500">Este curso aún no tiene lecciones.</p>;
+      return <p className="text-xs text-slate-500">Este curso aún no tiene lecciones.</p>;
     }
     return (
-      <ul className="flex flex-col gap-1">
+      <ul className="flex flex-col gap-1.5">
         {[...detalle.detalle]
           .sort((a, b) => a.orden - b.orden)
           .map((leccion) => (
-            <li key={leccion.leccionId} className="flex items-center gap-2">
-              <span className={leccion.completado ? "text-green-700" : "text-gray-400"}>
-                {leccion.completado ? "✓" : "○"}
+            <li key={leccion.leccionId} className="flex items-center gap-2 text-xs">
+              {leccion.completado ? (
+                <CheckCircle2 size={14} className="shrink-0 text-emerald-500" />
+              ) : (
+                <Circle size={14} className="shrink-0 text-slate-300" />
+              )}
+              <span className={leccion.completado ? "text-slate-700" : "text-slate-500"}>
+                {leccion.orden}. {leccion.leccionTitulo}
               </span>
-              <span>{leccion.orden}. {leccion.leccionTitulo}</span>
               {leccion.fechaCompletado && (
-                <span className="text-xs text-gray-500">{leccion.fechaCompletado.slice(0, 10)}</span>
+                <span className="text-[11px] text-slate-400">{leccion.fechaCompletado.slice(0, 10)}</span>
               )}
             </li>
           ))}
@@ -111,77 +135,92 @@ export default function InscritosCurso({ cursoId }) {
   }
 
   return (
-    <section className="mt-8">
-      <div className="flex justify-between items-center mb-3">
-        <h2 className="text-xl font-bold">Estudiantes inscritos</h2>
-        <label className="flex items-center gap-2 text-sm">
-          Estado
-          <select
-            value={estado}
-            onChange={(e) => cambiarEstado(e.target.value)}
-            className="border border-gray-300 rounded p-2"
-          >
-            <option value="">Todos</option>
-            <option value="ACTIVA">Activas</option>
-            <option value="CANCELADA">Canceladas</option>
-          </select>
-        </label>
+    <section>
+      <div className="mb-3 flex items-end justify-between">
+        <div className="flex items-center gap-2">
+          <h2 className="text-sm font-semibold">Estudiantes inscritos</h2>
+          {!loading && !error && <Badge variant="info">{inscritos.length}</Badge>}
+        </div>
+        <Select label="Estado" value={estado} onChange={(e) => cambiarEstado(e.target.value)} className="w-40">
+          <option value="">Todos</option>
+          <option value="ACTIVA">Activas</option>
+          <option value="CANCELADA">Canceladas</option>
+        </Select>
       </div>
 
       {loading ? (
-        <p className="text-gray-400">Cargando estudiantes...</p>
+        <p className="text-sm text-slate-400">Cargando estudiantes...</p>
       ) : error ? (
-        <p className="text-red-500">{error}</p>
+        <Alert variant="error" title="No se pudo cargar la lista de estudiantes">
+          {error}
+        </Alert>
       ) : inscritos.length === 0 ? (
-        <p className="text-gray-500">
+        <div className="rounded-xl border border-dashed border-slate-300 bg-white py-10 text-center text-sm text-slate-500">
           {estado ? "No hay inscripciones con ese estado." : "Aún no hay estudiantes inscritos en este curso."}
-        </p>
+        </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left border-collapse">
+        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+          <table className="w-full border-collapse text-left text-xs">
             <thead>
-              <tr className="border-b border-gray-300 text-gray-600">
-                <th className="py-2 pr-4">Estudiante</th>
-                <th className="py-2 pr-4">Programa</th>
-                <th className="py-2 pr-4">Estado</th>
-                <th className="py-2 pr-4">Avance</th>
-                <th className="py-2 pr-4">Nota final</th>
-                <th className="py-2"></th>
+              <tr className="border-b border-slate-200 bg-slate-50">
+                <th className={thClase}>Estudiante</th>
+                <th className={thClase}>Programa</th>
+                <th className={thClase}>Estado</th>
+                <th className={thClase}>Avance</th>
+                <th className={thClase}>Nota final</th>
+                <th className={thClase}></th>
               </tr>
             </thead>
             <tbody>
               {inscritos.map((inscrito) => {
                 const abierto = abiertoId === inscrito.estudianteId;
+                const badge = estadoBadge[inscrito.estadoInscripcion] ?? {
+                  variant: "neutral",
+                  label: inscrito.estadoInscripcion,
+                };
                 return (
                   <Fragment key={inscrito.inscripcionId}>
-                    <tr className="border-b border-gray-200 align-top">
-                      <td className="py-2 pr-4">
-                        <p className="font-semibold">{inscrito.nombre}</p>
-                        <p className="text-xs text-gray-500">
-                          {inscrito.correo} · {inscrito.codigoEstudiantil}
-                        </p>
+                    <tr className="border-b border-slate-100 align-top last:border-b-0">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-slate-700 text-[11px] font-semibold text-white">
+                            {iniciales(inscrito.nombre)}
+                          </span>
+                          <div className="leading-tight">
+                            <p className="font-semibold">{inscrito.nombre}</p>
+                            <p className="text-[11px] text-slate-400">
+                              {inscrito.correo} · {inscrito.codigoEstudiantil}
+                            </p>
+                          </div>
+                        </div>
                       </td>
-                      <td className="py-2 pr-4">
+                      <td className="px-4 py-3">
                         {inscrito.programaAcademico}
-                        <p className="text-xs text-gray-500">Semestre {inscrito.semestre}</p>
+                        <p className="text-[11px] text-slate-400">Semestre {inscrito.semestre}</p>
                       </td>
-                      <td className="py-2 pr-4">{inscrito.estadoInscripcion}</td>
-                      <td className="py-2 pr-4">
+                      <td className="px-4 py-3">
+                        <Badge variant={badge.variant}>{badge.label}</Badge>
+                      </td>
+                      <td className="px-4 py-3">
                         <BarraAvance
                           completadas={inscrito.leccionesCompletadas}
                           total={inscrito.totalLecciones}
                         />
                       </td>
-                      <td className="py-2 pr-4">{inscrito.calificacionFinal ?? "—"}</td>
-                      <td className="py-2">
-                        <button onClick={() => toggleDetalle(inscrito.estudianteId)} className="underline">
+                      <td className="px-4 py-3 font-semibold">{inscrito.calificacionFinal ?? "—"}</td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          onClick={() => toggleDetalle(inscrito.estudianteId)}
+                          className="inline-flex items-center gap-1 rounded-md border border-slate-200 px-3 py-1.5 text-xs font-semibold hover:bg-slate-50"
+                        >
                           {abierto ? "Ocultar" : "Ver avance"}
+                          {abierto ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                         </button>
                       </td>
                     </tr>
                     {abierto && (
-                      <tr className="border-b border-gray-200 bg-gray-50">
-                        <td colSpan={6} className="py-3 px-2">
+                      <tr className="border-b border-slate-100 bg-slate-50">
+                        <td colSpan={6} className="px-4 py-4">
                           {renderDetalle()}
                         </td>
                       </tr>
