@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { misCursosRequest, cancelarInscripcionRequest } from "../../api/inscripciones";
+import { misCursosRequest, cancelarInscripcionRequest, inscribirseRequest } from "../../api/inscripciones";
+import { mensajeError } from "../../utils/errores";
 
 const estadoColor = {
   ACTIVA: "bg-green-900 text-green-300",
@@ -12,34 +13,53 @@ export default function MisInscripciones() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [accionMsg, setAccionMsg] = useState("");
-  const [cancelandoId, setCancelandoId] = useState(null);
+  const [ocupandoId, setOcupandoId] = useState(null);
   const [recarga, setRecarga] = useState(0);
 
   useEffect(() => {
     misCursosRequest()
       .then((res) => {
+        setError("");
         const ordenadas = [...res.data].sort((a, b) =>
           b.fechaInscripcion.localeCompare(a.fechaInscripcion)
         );
         setInscripciones(ordenadas);
       })
-      .catch(() => setError("No se pudieron cargar tus inscripciones"))
+      .catch((err) => setError(mensajeError(err, "No se pudieron cargar tus inscripciones")))
       .finally(() => setLoading(false));
   }, [recarga]);
 
-  async function handleCancelar(inscripcion) {
-    if (!window.confirm(`¿Cancelar tu inscripción a "${inscripcion.cursoNombre}"?`)) return;
+  async function ejecutar(inscripcion, accion, mensajeExito, mensajeFallo) {
     setAccionMsg("");
-    setCancelandoId(inscripcion.id);
+    setOcupandoId(inscripcion.id);
     try {
-      await cancelarInscripcionRequest(inscripcion.id);
-      setAccionMsg("Inscripción cancelada");
+      await accion();
+      setAccionMsg(mensajeExito);
       setRecarga((r) => r + 1);
     } catch (err) {
-      setAccionMsg(err.response?.data?.mensaje || "No se pudo cancelar la inscripción");
+      setAccionMsg(mensajeError(err, mensajeFallo));
     } finally {
-      setCancelandoId(null);
+      setOcupandoId(null);
     }
+  }
+
+  function handleCancelar(inscripcion) {
+    if (!window.confirm(`¿Cancelar tu inscripción a "${inscripcion.cursoNombre}"?`)) return;
+    ejecutar(
+      inscripcion,
+      () => cancelarInscripcionRequest(inscripcion.id),
+      "Inscripción cancelada",
+      "No se pudo cancelar la inscripción"
+    );
+  }
+
+  function handleReinscribir(inscripcion) {
+    ejecutar(
+      inscripcion,
+      () => inscribirseRequest(inscripcion.cursoId),
+      `Volviste a inscribirte en "${inscripcion.cursoNombre}"`,
+      "No se pudo completar la inscripción"
+    );
   }
 
   if (loading) return <p className="text-gray-400">Cargando tus inscripciones...</p>;
@@ -57,34 +77,46 @@ export default function MisInscripciones() {
         </p>
       ) : (
         <div className="flex flex-col gap-3">
-          {inscripciones.map((ins) => (
-            <div key={ins.id} className="border border-gray-700 rounded p-4 flex justify-between items-center">
-              <div>
-                <Link to={`/cursos/${ins.cursoId}`} className="font-semibold hover:underline">
-                  {ins.cursoNombre}
-                </Link>
-                <p className="text-sm text-gray-500">Docente: {ins.docenteNombre}</p>
-                <p className="text-xs text-gray-500 mt-1">
-                  Inscrito el {ins.fechaInscripcion.slice(0, 10)} · Calificación final:{" "}
-                  {ins.calificacionFinal ?? "Sin calificar"}
-                </p>
+          {inscripciones.map((ins) => {
+            const ocupado = ocupandoId === ins.id;
+            return (
+              <div key={ins.id} className="border border-gray-700 rounded p-4 flex justify-between items-center gap-4">
+                <div>
+                  <Link to={`/cursos/${ins.cursoId}`} className="font-semibold hover:underline">
+                    {ins.cursoNombre}
+                  </Link>
+                  <p className="text-sm text-gray-500">Docente: {ins.docenteNombre}</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Inscrito el {ins.fechaInscripcion.slice(0, 10)} · Calificación final:{" "}
+                    {ins.calificacionFinal ?? "Sin calificar"}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className={`text-xs px-2 py-1 rounded ${estadoColor[ins.estado] || estadoColorDefault}`}>
+                    {ins.estado}
+                  </span>
+                  {ins.estado === "ACTIVA" && (
+                    <button
+                      onClick={() => handleCancelar(ins)}
+                      disabled={ocupado}
+                      className="border border-red-700 text-red-700 px-3 py-1 rounded text-sm"
+                    >
+                      {ocupado ? "Cancelando..." : "Cancelar"}
+                    </button>
+                  )}
+                  {ins.estado === "CANCELADA" && (
+                    <button
+                      onClick={() => handleReinscribir(ins)}
+                      disabled={ocupado}
+                      className="border border-black px-3 py-1 rounded text-sm"
+                    >
+                      {ocupado ? "Inscribiendo..." : "Volver a inscribirme"}
+                    </button>
+                  )}
+                </div>
               </div>
-              <div className="flex items-center gap-3">
-                <span className={`text-xs px-2 py-1 rounded ${estadoColor[ins.estado] || estadoColorDefault}`}>
-                  {ins.estado}
-                </span>
-                {ins.estado === "ACTIVA" && (
-                  <button
-                    onClick={() => handleCancelar(ins)}
-                    disabled={cancelandoId === ins.id}
-                    className="border border-red-700 text-red-700 px-3 py-1 rounded text-sm"
-                  >
-                    {cancelandoId === ins.id ? "Cancelando..." : "Cancelar"}
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

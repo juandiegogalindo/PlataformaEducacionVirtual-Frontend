@@ -7,6 +7,7 @@ import { ROLES, puedeGestionarCurso, esDocenteDelCurso } from "../../auth/roles"
 import { textoSesion } from "../../utils/horarios";
 import { mensajeError } from "../../utils/errores";
 import LeccionesCurso from "../lecciones/LeccionesCurso";
+import InscritosCurso from "../estudiantes/InscritosCurso";
 
 export default function CursoDetalle() {
   const { id } = useParams();
@@ -172,6 +173,8 @@ function DetalleCurso({ id }) {
         puedeGestionar={esDocenteDelCurso(user, curso)}
         inscrito={Boolean(inscripcion)}
       />
+
+      {puedeGestionarCurso(user, curso) && <InscritosCurso cursoId={curso.id} />} 
 
       {/* Aquí irá <RecursosCurso /> (paquete de Miguel) */}
     </div>
