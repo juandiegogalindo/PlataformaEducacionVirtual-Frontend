@@ -1,57 +1,112 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { Mail, Lock } from "lucide-react";
 import { useAuthStore } from "../../auth/authStore";
+import AuthLayout from "../../components/layout/AuthLayout";
+import Input from "../../components/ui/Input";
+import Alert from "../../components/ui/Alert";
+
+function formatearTiempo(segundos) {
+  const m = String(Math.floor(segundos / 60)).padStart(2, "0");
+  const s = String(segundos % 60).padStart(2, "0");
+  return `${m}:${s}`;
+}
 
 export default function Login() {
   const [correo, setCorreo] = useState("");
   const [contrasena, setContrasena] = useState("");
-  const [error, setError] = useState("");
+  const [fallo, setFallo] = useState(false);
+  const [intentos, setIntentos] = useState(null);
+  const [bloqueoSeg, setBloqueoSeg] = useState(0);
   const [loading, setLoading] = useState(false);
   const login = useAuthStore((state) => state.login);
   const navigate = useNavigate();
 
+  const bloqueado = bloqueoSeg > 0;
+
+  useEffect(() => {
+    if (!bloqueado) return;
+    const id = setInterval(() => setBloqueoSeg((s) => s - 1), 1000);
+    return () => clearInterval(id);
+  }, [bloqueado]);
+
   async function handleSubmit(e) {
     e.preventDefault();
-    setError("");
+    if (bloqueado) return;
+    setFallo(false);
     setLoading(true);
     try {
       await login(correo, contrasena);
       navigate("/cursos");
-    } catch {
-      setError("Correo o contraseña incorrectos");
+    } catch (err) {
+      const data = err.response?.data;
+      // Ajusta estos campos a lo que realmente devuelva tu backend
+      if (err.response?.status === 423 || data?.bloqueado) {
+        setBloqueoSeg(data?.segundosRestantes ?? 15 * 60);
+      } else {
+        setIntentos(data?.intentosRestantes ?? null);
+        setFallo(true);
+      }
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="flex items-center justify-center h-screen bg-black">
-      <form onSubmit={handleSubmit} className="bg-gray-900 p-8 rounded w-80 flex flex-col gap-4">
-        <h1 className="text-white text-xl font-bold text-center">Iniciar sesión</h1>
-        {error && <p className="text-red-500 text-sm">{error}</p>}
-        <input
+    <AuthLayout
+      panelTitle="Acceso a la plataforma"
+      title="Iniciar sesión"
+      subtitle="Ingrese sus credenciales para acceder a la plataforma."
+    >
+      {bloqueado && (
+        <Alert variant="error" title="Cuenta bloqueada temporalmente" className="mb-5">
+          Superó los intentos fallidos permitidos. Podrá volver a intentarlo en{" "}
+          <strong>{formatearTiempo(bloqueoSeg)}</strong> minutos.
+        </Alert>
+      )}
+      {fallo && !bloqueado && (
+        <Alert variant="warning" title="Credenciales incorrectas" className="mb-5">
+          Verifique su correo y contraseña.
+          {intentos != null && ` Le quedan ${intentos} ${intentos === 1 ? "intento" : "intentos"}.`}
+        </Alert>
+      )}
+
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <Input
+          label="Correo electrónico"
+          icon={Mail}
           type="email"
-          placeholder="Correo"
+          placeholder="nombre@correo.com"
           value={correo}
           onChange={(e) => setCorreo(e.target.value)}
-          className="p-2 rounded bg-gray-800 text-white"
+          invalid={fallo && !bloqueado}
           required
         />
-        <input
+        <Input
+          label="Contraseña"
+          icon={Lock}
           type="password"
           placeholder="Contraseña"
           value={contrasena}
           onChange={(e) => setContrasena(e.target.value)}
-          className="p-2 rounded bg-gray-800 text-white"
           required
         />
-        <button type="submit" disabled={loading} className="bg-white text-black py-2 rounded font-semibold">
-          {loading ? "Ingresando..." : "Ingresar"}
+
+        <button
+          type="submit"
+          disabled={loading || bloqueado}
+          className="w-full rounded-md bg-primary py-2.5 text-xs font-semibold text-white hover:bg-primary-dark disabled:bg-primary/40 disabled:cursor-not-allowed"
+        >
+          {bloqueado ? "Acceso bloqueado" : loading ? "Ingresando..." : "Iniciar sesión"}
         </button>
-        <p className="text-gray-400 text-sm text-center mt-2">
-        ¿No tienes cuenta? <Link to="/registro" className="underline">Regístrate</Link>
-        </p>
       </form>
-    </div>
+
+      <p className="text-center text-[11px] text-slate-500 mt-5">
+        ¿No tiene una cuenta?{" "}
+        <Link to="/registro" className="font-semibold text-primary hover:underline">
+          Regístrese
+        </Link>
+      </p>
+    </AuthLayout>
   );
 }
