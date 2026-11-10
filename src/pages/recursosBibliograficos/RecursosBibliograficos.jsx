@@ -6,6 +6,8 @@ import {
   actualizarRecursoRequest,
   eliminarRecursoRequest,
 } from "../../api/recursosBibliograficos";
+import { useAuthStore } from "../../auth/authStore";
+import { ROLES } from "../../auth/roles";
 
 const formularioInicial = {
   titulo: "",
@@ -15,22 +17,76 @@ const formularioInicial = {
   enlace: "",
 };
 
+const ICONOS = {
+  libro: (
+    <>
+      <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+      <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+    </>
+  ),
+  candado: (
+    <>
+      <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </>
+  ),
+};
+
+const TONOS = {
+  ambar: "bg-amber-50 text-amber-500",
+  gris: "bg-slate-100 text-slate-500",
+};
+
+// Mismo lenguaje visual que "Este curso aún no tiene contenido publicado"
+function EstadoVacio({ icono, tono, titulo, descripcion, children }) {
+  return (
+    <div className="flex flex-col items-center rounded-lg border border-dashed border-slate-200 px-6 py-10 text-center">
+      <div className={`flex h-14 w-14 items-center justify-center rounded-2xl ${TONOS[tono]}`}>
+        <svg
+          viewBox="0 0 24 24"
+          className="h-7 w-7"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          {ICONOS[icono]}
+        </svg>
+      </div>
+      <h3 className="mt-4 text-sm font-semibold text-slate-800">{titulo}</h3>
+      <p className="mt-1 max-w-sm text-xs text-slate-500">{descripcion}</p>
+      {children && <div className="mt-4">{children}</div>}
+    </div>
+  );
+}
+
 export default function RecursosBibliograficos({ cursoId: cursoIdProp }) {
   const params = useParams();
   const cursoId = cursoIdProp ?? params.cursoId;
+  const user = useAuthStore((s) => s.user);
 
-  const [recursos, setRecursos] = useState([]);
+  // Los estudiantes consultan; docentes y demás roles administran
+  const esEstudiante = user?.rol === ROLES.ESTUDIANTE;
+
   const [formulario, setFormulario] = useState(formularioInicial);
   const [recursoEditando, setRecursoEditando] = useState(null);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
-  const [cargadoPara, setCargadoPara] = useState(null); // curso cuyos recursos ya se cargaron
+  // Resultado de la carga, atado al curso: fallo = null | "sin-acceso" | "error"
+  const [resultado, setResultado] = useState({ cursoId: null, recursos: [], fallo: null });
   const [recarga, setRecarga] = useState(0); // se incrementa para volver a pedir la lista
   const [error, setError] = useState("");
 
-  // Valores derivados: no necesitan estado ni setState dentro del efecto
-  const cargando = Boolean(cursoId) && cargadoPara !== cursoId;
+  const cargando = Boolean(cursoId) && resultado.cursoId !== cursoId;
+  const recursos = resultado.cursoId === cursoId ? resultado.recursos : [];
+  const fallo = resultado.cursoId === cursoId ? resultado.fallo : null;
+
   const errorCurso = cursoId ? "" : "No se encontró el identificador del curso.";
-  const mensajeError = errorCurso || error;
+  const errorCarga = fallo === "error" ? "No fue posible cargar los recursos bibliográficos." : "";
+  const mensajeError = errorCurso || error || errorCarga;
+
+  const puedeGestionar = !esEstudiante && fallo !== "sin-acceso";
 
   const recargar = () => setRecarga((n) => n + 1);
 
@@ -41,14 +97,16 @@ export default function RecursosBibliograficos({ cursoId: cursoIdProp }) {
     listarRecursosRequest(cursoId)
       .then((respuesta) => {
         if (cancelado) return;
-        setRecursos(respuesta.data);
+        setResultado({ cursoId, recursos: respuesta.data, fallo: null });
         setError("");
       })
-      .catch(() => {
-        if (!cancelado) setError("No fue posible cargar los recursos bibliográficos.");
-      })
-      .finally(() => {
-        if (!cancelado) setCargadoPara(cursoId);
+      .catch((err) => {
+        if (cancelado) return;
+        setResultado({
+          cursoId,
+          recursos: [],
+          fallo: err.response?.status === 403 ? "sin-acceso" : "error",
+        });
       });
 
     return () => {
@@ -124,6 +182,131 @@ export default function RecursosBibliograficos({ cursoId: cursoIdProp }) {
     }
   }
 
+  function contenido() {
+    if (cargando) {
+      return (
+        <p className="p-6 text-center text-xs text-slate-500">Cargando recursos...</p>
+      );
+    }
+
+    if (fallo === "sin-acceso") {
+      return (
+        <EstadoVacio
+          icono="candado"
+          tono="gris"
+          titulo="Recursos disponibles para inscritos"
+          descripcion={
+            esEstudiante
+              ? "Inscríbete a este curso desde el catálogo para consultar su bibliografía."
+              : "No tienes acceso a los recursos de este curso."
+          }
+        />
+      );
+    }
+
+    if (fallo === "error") {
+      return (
+        <div className="flex justify-center p-6">
+          <button
+            onClick={recargar}
+            className="rounded-md border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+          >
+            Reintentar
+          </button>
+        </div>
+      );
+    }
+
+    if (recursos.length === 0) {
+      return (
+        <EstadoVacio
+          icono="libro"
+          tono="ambar"
+          titulo="Este curso aún no tiene recursos bibliográficos"
+          descripcion={
+            puedeGestionar
+              ? "Agrega el primer libro, artículo o enlace de apoyo para tus estudiantes."
+              : "El docente publicará libros, artículos y enlaces de apoyo próximamente."
+          }
+        >
+          {puedeGestionar && (
+            <button
+              onClick={() => abrirFormulario()}
+              className="rounded-md bg-primary px-4 py-2 text-xs font-semibold text-white hover:bg-primary-dark"
+            >
+              + Agregar el primer recurso
+            </button>
+          )}
+        </EstadoVacio>
+      );
+    }
+
+    return (
+      <div className="overflow-x-auto rounded-lg border border-slate-200">
+        <table className="w-full text-left text-xs">
+          <thead className="bg-slate-50 text-slate-600">
+            <tr>
+              <th className="p-3">Título</th>
+              <th className="p-3">Autor</th>
+              <th className="p-3">Año</th>
+              <th className="p-3">Tipo</th>
+              <th className="p-3">Enlace</th>
+              {puedeGestionar && <th className="p-3">Acciones</th>}
+            </tr>
+          </thead>
+
+          <tbody>
+            {recursos.map((recurso) => (
+              <tr
+                key={recurso.id}
+                className="border-t border-slate-100 hover:bg-slate-50"
+              >
+                <td className="p-3 font-medium text-slate-800">{recurso.titulo}</td>
+
+                <td className="p-3 text-slate-600">{recurso.autor || "—"}</td>
+
+                <td className="p-3 text-slate-600">{recurso.anioPublicacion || "—"}</td>
+
+                <td className="p-3 text-slate-600">{recurso.tipoRecurso}</td>
+
+                <td className="p-3">
+                  <a
+                    href={recurso.enlace}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-primary hover:underline"
+                  >
+                    Ver recurso
+                  </a>
+                </td>
+
+                {puedeGestionar && (
+                  <td className="p-3">
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => abrirFormulario(recurso)}
+                        className="font-medium text-primary hover:underline"
+                      >
+                        Editar
+                      </button>
+
+                      <button
+                        onClick={() => eliminarRecurso(recurso.id)}
+                        className="font-medium text-red-600 hover:underline"
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
   return (
     <section className="rounded-xl border border-slate-200 bg-white p-5">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
@@ -133,16 +316,20 @@ export default function RecursosBibliograficos({ cursoId: cursoIdProp }) {
           </h2>
 
           <p className="mt-1 text-xs text-slate-500">
-            Consulta y administra los recursos del curso.
+            {puedeGestionar
+              ? "Consulta y administra los recursos del curso."
+              : "Consulta los recursos de apoyo del curso."}
           </p>
         </div>
 
-        <button
-          onClick={() => abrirFormulario()}
-          className="rounded-md bg-primary px-4 py-2 text-xs font-semibold text-white hover:bg-primary-dark"
-        >
-          + Agregar recurso
-        </button>
+        {puedeGestionar && (
+          <button
+            onClick={() => abrirFormulario()}
+            className="rounded-md bg-primary px-4 py-2 text-xs font-semibold text-white hover:bg-primary-dark"
+          >
+            + Agregar recurso
+          </button>
+        )}
       </div>
 
       {mensajeError && (
@@ -151,7 +338,7 @@ export default function RecursosBibliograficos({ cursoId: cursoIdProp }) {
         </div>
       )}
 
-      {mostrarFormulario && (
+      {puedeGestionar && mostrarFormulario && (
         <form
           onSubmit={guardarRecurso}
           className="mb-6 rounded-lg border border-slate-200 bg-slate-50 p-4"
@@ -230,84 +417,7 @@ export default function RecursosBibliograficos({ cursoId: cursoIdProp }) {
         </form>
       )}
 
-      <div className="overflow-x-auto rounded-lg border border-slate-200">
-        {cargando ? (
-          <p className="p-6 text-center text-xs text-slate-500">
-            Cargando recursos...
-          </p>
-        ) : recursos.length === 0 ? (
-          <p className="p-6 text-center text-xs text-slate-500">
-            No hay recursos bibliográficos registrados para este curso.
-          </p>
-        ) : (
-          <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 text-slate-600">
-              <tr>
-                <th className="p-3">Título</th>
-                <th className="p-3">Autor</th>
-                <th className="p-3">Año</th>
-                <th className="p-3">Tipo</th>
-                <th className="p-3">Enlace</th>
-                <th className="p-3">Acciones</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {recursos.map((recurso) => (
-                <tr
-                  key={recurso.id}
-                  className="border-t border-slate-100 hover:bg-slate-50"
-                >
-                  <td className="p-3 font-medium text-slate-800">
-                    {recurso.titulo}
-                  </td>
-
-                  <td className="p-3 text-slate-600">
-                    {recurso.autor || "—"}
-                  </td>
-
-                  <td className="p-3 text-slate-600">
-                    {recurso.anioPublicacion || "—"}
-                  </td>
-
-                  <td className="p-3 text-slate-600">
-                    {recurso.tipoRecurso}
-                  </td>
-
-                  <td className="p-3">
-                    <a
-                      href={recurso.enlace}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-medium text-primary hover:underline"
-                    >
-                      Ver recurso
-                    </a>
-                  </td>
-
-                  <td className="p-3">
-                    <div className="flex gap-3">
-                      <button
-                        onClick={() => abrirFormulario(recurso)}
-                        className="font-medium text-primary hover:underline"
-                      >
-                        Editar
-                      </button>
-
-                      <button
-                        onClick={() => eliminarRecurso(recurso.id)}
-                        className="font-medium text-red-600 hover:underline"
-                      >
-                        Eliminar
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+      {contenido()}
     </section>
   );
 }

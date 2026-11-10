@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, Navigate, useParams } from "react-router-dom";
 import { listarMensajes, publicarMensaje } from "../../api/foro";
 import { misCursosDocenteRequest } from "../../api/cursos";
 import { misCursosRequest } from "../../api/inscripciones";
@@ -12,19 +12,29 @@ import {
   tituloDe,
 } from "../../utils/foroUtils";
 
+// Estados que sacan a un curso (o a una inscripción) de la lista de foros
+const ESTADOS_INACTIVOS = ["ARCHIVADO", "ARCHIVADA", "INACTIVO", "INACTIVA", "CANCELADO", "CANCELADA"];
+
+const estaActivo = (c) =>
+  ![c.estado, c.estadoCurso, c.cursoEstado, c.estadoInscripcion, c.curso?.estado].some(
+    (e) => typeof e === "string" && ESTADOS_INACTIVOS.includes(e.toUpperCase())
+  );
+
 export default function ForoPage() {
   const { cursoId } = useParams();
-  const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
+
   const [cursos, setCursos] = useState([]);
-  const [mensajes, setMensajes] = useState([]);
-  const [cargadoPara, setCargadoPara] = useState(null); // curso cuyos mensajes ya se cargaron
-  const [error, setError] = useState("");
+  const [cursosListos, setCursosListos] = useState(false);
+  // Mensajes y error guardan el curso al que pertenecen: así nunca se muestran en otro curso
+  const [datos, setDatos] = useState({ cursoId: null, lista: [] });
+  const [errorInfo, setErrorInfo] = useState({ cursoId: null, texto: "" });
   const [nuevo, setNuevo] = useState(null); // null = cerrado, string = texto
   const [enviando, setEnviando] = useState(false);
 
-  // "cargando" se deriva: mientras el curso de la URL no coincida con el último cargado
-  const cargando = cargadoPara !== cursoId;
+  const cargando = datos.cursoId !== cursoId;
+  const mensajes = datos.cursoId === cursoId ? datos.lista : [];
+  const error = errorInfo.cursoId === cursoId ? errorInfo.texto : "";
 
   useEffect(() => {
     let cancelado = false;
@@ -32,19 +42,21 @@ export default function ForoPage() {
     pedirCursos()
       .then(({ data }) => {
         if (cancelado) return;
-        // Los endpoints pueden traer los campos con distinto nombre: se normalizan a id y nombre
-        const lista = data.map((c) => ({
+        // Se normalizan a id y nombre, y se descartan los archivados o cancelados
+        const lista = data.filter(estaActivo).map((c) => ({
           id: c.cursoId ?? c.id,
           nombre: c.cursoNombre ?? c.nombre ?? c.titulo,
         }));
         setCursos(lista);
-        if (!cursoId && lista.length) navigate(`/foro/${lista[0].id}`, { replace: true });
+        setCursosListos(true);
       })
       .catch(() => {
-        if (!cancelado) setCursos([]);
+        if (cancelado) return;
+        setCursos([]);
+        setCursosListos(true);
       });
     return () => { cancelado = true; };
-  }, [cursoId, navigate, user]);
+  }, [user]);
 
   useEffect(() => {
     if (!cursoId) return;
@@ -52,21 +64,42 @@ export default function ForoPage() {
     listarMensajes(cursoId)
       .then(({ data }) => {
         if (cancelado) return;
-        setError("");
-        setMensajes(
-          [...data].sort((a, b) => new Date(b.fechaPublicacion) - new Date(a.fechaPublicacion))
+        const ordenados = [...data].sort(
+          (a, b) => new Date(b.fechaPublicacion) - new Date(a.fechaPublicacion)
         );
+        setDatos({ cursoId, lista: ordenados });
+        setErrorInfo({ cursoId, texto: "" });
       })
-      .catch(() => {
-        if (!cancelado) setError("No se pudo cargar el foro. Intenta de nuevo.");
-      })
-      .finally(() => {
-        if (!cancelado) setCargadoPara(cursoId);
+      .catch((err) => {
+        if (cancelado) return;
+        setDatos({ cursoId, lista: [] });
+        setErrorInfo({
+          cursoId,
+          texto:
+            err.response?.status === 403
+              ? "No tienes acceso al foro de este curso."
+              : "No se pudo cargar el foro. Intenta de nuevo.",
+        });
       });
     return () => { cancelado = true; };
   }, [cursoId]);
 
   const curso = cursos.find((c) => String(c.id) === String(cursoId));
+
+  // Sin curso en la URL, o con un curso que ya no está disponible: ir al primer foro activo
+  if (cursosListos && cursos.length > 0 && !curso) {
+    return <Navigate to={`/foro/${cursos[0].id}`} replace />;
+  }
+  if (cursosListos && cursos.length === 0) {
+    return (
+      <div className="p-6">
+        <h1 className="text-xl font-semibold text-slate-900">Foro del curso</h1>
+        <p className="mt-4 text-sm text-slate-600">
+          No tienes cursos activos con foro disponible.
+        </p>
+      </div>
+    );
+  }
 
   async function publicar(e) {
     e.preventDefault();
@@ -74,10 +107,19 @@ export default function ForoPage() {
     setEnviando(true);
     try {
       const { data } = await publicarMensaje(cursoId, nuevo.trim());
-      setMensajes((prev) => [data, ...prev]);
+      setDatos((prev) =>
+        prev.cursoId === cursoId ? { cursoId, lista: [data, ...prev.lista] } : prev
+      );
+      setErrorInfo({ cursoId, texto: "" });
       setNuevo(null);
-    } catch {
-      setError("No se pudo publicar. Revisa tu conexión e intenta de nuevo.");
+    } catch (err) {
+      setErrorInfo({
+        cursoId,
+        texto:
+          err.response?.status === 403
+            ? "No tienes permiso para publicar en este foro."
+            : "No se pudo publicar. Intenta de nuevo.",
+      });
     } finally {
       setEnviando(false);
     }
