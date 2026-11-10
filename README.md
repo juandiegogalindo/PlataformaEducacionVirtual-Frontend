@@ -14,25 +14,6 @@
 
 ---
 
-## Tabla de contenido
-
-- [Descripción](#descripción)
-- [Funcionalidades](#funcionalidades)
-- [Roles y permisos](#roles-y-permisos)
-- [Tecnologías](#tecnologías)
-- [Requisitos previos](#requisitos-previos)
-- [Instalación y ejecución](#instalación-y-ejecución)
-- [Variables de entorno](#variables-de-entorno)
-- [Scripts disponibles](#scripts-disponibles)
-- [Estructura del proyecto](#estructura-del-proyecto)
-- [Arquitectura](#arquitectura)
-- [Convenciones de código](#convenciones-de-código)
-- [Flujo de trabajo](#flujo-de-trabajo)
-- [Despliegue](#despliegue)
-- [Equipo](#equipo)
-
----
-
 ## Descripción
 
 **Aularia** es una plataforma de educación virtual que permite gestionar cursos, lecciones, evaluaciones, calificaciones y la comunicación entre docentes y estudiantes. Este repositorio contiene el **frontend**, una aplicación de página única (SPA) que consume la API REST del backend.
@@ -120,6 +101,9 @@ El estado de sesión (`user`, `accessToken`, `refreshToken`) vive en `authStore`
 2. Hacer commits pequeños y descriptivos, por ejemplo `feat(foro): agrega edición de mensajes`.
 3. Verificar con `npm run lint` y `npm run build`.
 4. Abrir un Pull Request hacia `desarrollo` y esperar la revisión de al menos un compañero.
+
+
+
 
 <div align="center">
 
