@@ -4,6 +4,7 @@ import { listarMensajes, publicarMensaje } from "../../api/foro";
 import { misCursosDocenteRequest } from "../../api/cursos";
 import { misCursosRequest } from "../../api/inscripciones";
 import { useAuthStore } from "../../auth/authStore";
+import { mensajeError } from "../../utils/errores";
 import {
   contarRespuestas,
   esDocente,
@@ -75,10 +76,9 @@ export default function ForoPage() {
         setDatos({ cursoId, lista: [] });
         setErrorInfo({
           cursoId,
-          texto:
-            err.response?.status === 403
-              ? "No tienes acceso al foro de este curso."
-              : "No se pudo cargar el foro. Intenta de nuevo.",
+          texto: err.response?.status === 403
+            ? "No tienes acceso al foro de este curso."
+            : mensajeError(err, "No se pudo cargar el foro. Intenta de nuevo."),
         });
       });
     return () => { cancelado = true; };
@@ -115,10 +115,9 @@ export default function ForoPage() {
     } catch (err) {
       setErrorInfo({
         cursoId,
-        texto:
-          err.response?.status === 403
-            ? "No tienes permiso para publicar en este foro."
-            : "No se pudo publicar. Intenta de nuevo.",
+        texto: err.response?.status === 403
+          ? "No tienes permiso para publicar en este foro."
+          : mensajeError(err, "No se pudo publicar. Intenta de nuevo."),
       });
     } finally {
       setEnviando(false);

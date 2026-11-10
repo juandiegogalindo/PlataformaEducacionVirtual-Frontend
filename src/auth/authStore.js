@@ -5,41 +5,102 @@ function conVersionFoto(usuario) {
   return usuario ? { ...usuario, fotoVersion: Date.now() } : usuario;
 }
 
+const CLAVES_SESION = ["accessToken", "refreshToken", "user"];
+
+function leerSesion() {
+  try {
+    const user = localStorage.getItem("user");
+    return {
+      user: user ? JSON.parse(user) : null,
+      accessToken: localStorage.getItem("accessToken"),
+      refreshToken: localStorage.getItem("refreshToken"),
+    };
+  } catch {
+    limpiarSesionPersistida();
+    return { user: null, accessToken: null, refreshToken: null };
+  }
+}
+
+function limpiarSesionPersistida() {
+  try {
+    CLAVES_SESION.forEach((clave) => localStorage.removeItem(clave));
+  } catch {
+    // El estado en memoria siempre se limpia aunque el almacenamiento no esté disponible.
+  }
+}
+
+function persistirSesion({ user, accessToken, refreshToken }) {
+  try {
+    localStorage.setItem("accessToken", accessToken);
+    localStorage.setItem("refreshToken", refreshToken);
+    if (user) localStorage.setItem("user", JSON.stringify(user));
+    else localStorage.removeItem("user");
+  } catch (error) {
+    limpiarSesionPersistida();
+    throw new Error("No se pudo guardar la sesión de forma segura.", { cause: error });
+  }
+}
+
+const sesionInicial = leerSesion();
+
 export const useAuthStore = create((set, get) => ({
-  user: JSON.parse(localStorage.getItem("user")) || null,
-  accessToken: localStorage.getItem("accessToken") || null,
-  refreshToken: localStorage.getItem("refreshToken") || null,
+  ...sesionInicial,
+  initialized: true,
+  sessionVersion: 0,
 
   login: async (correo, contrasena) => {
     const { data } = await loginRequest(correo, contrasena);
-    localStorage.setItem("accessToken", data.accessToken);
-    localStorage.setItem("refreshToken", data.refreshToken);
-    set({ accessToken: data.accessToken, refreshToken: data.refreshToken });
+    if (!data?.accessToken || !data?.refreshToken) {
+      throw new Error("La respuesta de autenticación no contiene tokens válidos.");
+    }
 
-    const perfil = await getPerfilRequest();
-    const usuario = conVersionFoto(perfil.data);
-    localStorage.setItem("user", JSON.stringify(usuario));
-    set({ user: usuario });
+    const sessionVersion = get().sessionVersion + 1;
+    try {
+      persistirSesion({ accessToken: data.accessToken, refreshToken: data.refreshToken, user: null });
+      set({ accessToken: data.accessToken, refreshToken: data.refreshToken, user: null, sessionVersion });
 
-    return usuario;
+      const perfil = await getPerfilRequest();
+      const usuario = conVersionFoto(perfil.data);
+      persistirSesion({ accessToken: data.accessToken, refreshToken: data.refreshToken, user: usuario });
+      set({ user: usuario });
+      return usuario;
+    } catch (error) {
+      limpiarSesionPersistida();
+      set({ user: null, accessToken: null, refreshToken: null, sessionVersion });
+      throw error;
+    }
   },
 
-  refreshAccessToken: async () => {
+  refreshAccessToken: async (expectedVersion = get().sessionVersion) => {
+    if (expectedVersion !== get().sessionVersion) {
+      throw new Error("La sesión cambió mientras se renovaba el token.");
+    }
     const refreshToken = get().refreshToken;
     if (!refreshToken) throw new Error("No hay refresh token");
 
     const { data } = await refreshRequest(refreshToken);
-    localStorage.setItem("accessToken", data.accessToken);
-    localStorage.setItem("refreshToken", data.refreshToken);
-    set({ accessToken: data.accessToken, refreshToken: data.refreshToken });
+    if (expectedVersion !== get().sessionVersion || !data?.accessToken) {
+      throw new Error("La sesión cambió o la renovación no devolvió un token válido.");
+    }
+    const nuevoRefreshToken = data.refreshToken || refreshToken;
+    try {
+      persistirSesion({ user: get().user, accessToken: data.accessToken, refreshToken: nuevoRefreshToken });
+    } catch (error) {
+      get().limpiarSesion();
+      throw error;
+    }
+    set({ accessToken: data.accessToken, refreshToken: nuevoRefreshToken });
     return data.accessToken;
   },
 
   limpiarSesion: () => {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
-    localStorage.removeItem("user");
-    set({ user: null, accessToken: null, refreshToken: null });
+    limpiarSesionPersistida();
+    set((state) => ({
+      user: null,
+      accessToken: null,
+      refreshToken: null,
+      sessionVersion: state.sessionVersion + 1,
+    }));
   },
 
   logout: async () => {
@@ -54,7 +115,11 @@ export const useAuthStore = create((set, get) => ({
 
   setUser: (user) => {
     const usuario = conVersionFoto(user);
-    localStorage.setItem("user", JSON.stringify(usuario));
+    persistirSesion({
+      user: usuario,
+      accessToken: get().accessToken,
+      refreshToken: get().refreshToken,
+    });
     set({ user: usuario });
   },
 }));

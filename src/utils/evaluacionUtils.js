@@ -5,7 +5,16 @@ export const ESTADOS_EVALUACION = {
 };
 
 export function rutaEvaluacion(cursoId, tipo, id) {
+  if (tipo !== "TAREA" && tipo !== "EXAMEN") {
+    throw new Error(`Tipo de evaluación no válido: ${tipo}. Usa TAREA o EXAMEN.`);
+  }
   return `/cursos/${cursoId}/evaluaciones/${tipo === "EXAMEN" ? "examenes" : "tareas"}/${id}`;
+}
+
+function numeroPorcentaje(valor) {
+  if (typeof valor === "string" && valor.trim() === "") return null;
+  const numero = Number(valor);
+  return Number.isFinite(numero) ? numero : null;
 }
 
 export function fechaEvaluacion(valor) {
@@ -17,7 +26,14 @@ export function fechaEvaluacion(valor) {
 }
 
 export function pesoTotal(evaluaciones) {
-  return evaluaciones.reduce((suma, evaluacion) => suma + evaluacion.pesoPorcentual, 0);
+  if (!Array.isArray(evaluaciones)) throw new TypeError("Las evaluaciones deben ser una lista.");
+  return evaluaciones.reduce((suma, evaluacion) => {
+    const peso = numeroPorcentaje(evaluacion?.pesoPorcentual);
+    if (peso === null || peso < 0 || peso > 100) {
+      throw new Error("Cada peso porcentual debe ser un número finito entre 0 y 100.");
+    }
+    return suma + peso;
+  }, 0);
 }
 
 export function porcentaje(valor) {
@@ -25,9 +41,10 @@ export function porcentaje(valor) {
 }
 
 export function validarEvaluacion(form, tipo, pesoActual) {
+  if (tipo !== "TAREA" && tipo !== "EXAMEN") return "El tipo de evaluación debe ser TAREA o EXAMEN.";
   if (!form.titulo.trim()) return "El título es obligatorio.";
-  const peso = Number(form.pesoPorcentual);
-  if (!Number.isFinite(peso) || peso <= 0 || peso > 100) return "El peso debe ser mayor que 0 y menor o igual a 100 %.";
+  const peso = numeroPorcentaje(form.pesoPorcentual);
+  if (peso === null || peso <= 0 || peso > 100) return "El peso debe ser mayor que 0 y menor o igual a 100 %.";
   if (pesoActual + peso > 100 + 1e-9) return "El peso total de las evaluaciones no puede superar el 100 %.";
   const fecha = tipo === "TAREA" ? form.fechaLimite : form.fechaAplicacion;
   if (!fecha || Number.isNaN(new Date(fecha).getTime())) return "Ingresa una fecha y hora válidas.";
@@ -42,6 +59,9 @@ export function validarEvaluacion(form, tipo, pesoActual) {
 }
 
 export function prepararEvaluacion(form, tipo) {
+  if (tipo !== "TAREA" && tipo !== "EXAMEN") {
+    throw new Error(`Tipo de evaluación no válido: ${tipo}. Usa TAREA o EXAMEN.`);
+  }
   const datos = { titulo: form.titulo.trim(), descripcion: form.descripcion.trim(), pesoPorcentual: Number(form.pesoPorcentual) };
   return tipo === "TAREA" ? {
     ...datos,

@@ -82,11 +82,13 @@ Cada recurso del backend tiene su propio módulo en `src/api/`, que exporta func
 - toma la URL base de `VITE_API_URL`;
 - agrega el encabezado `Authorization: Bearer <accessToken>` en cada petición, salvo en las rutas de autenticación;
 - ante un `401`, renueva el token con el refresh token y reintenta la petición. Si hay varias peticiones simultáneas, las encola para hacer una sola renovación;
-- si la renovación falla, limpia la sesión y redirige a `/login`.
+- distingue solicitudes canceladas, errores temporales y refresh inválidos; sólo una respuesta de refresh inválida cierra la sesión.
 
 ### Autenticación y rutas protegidas
 
-El estado de sesión (`user`, `accessToken`, `refreshToken`) vive en `authStore` (Zustand) y se persiste en `localStorage`. `ProtectedRoute` valida que exista sesión y, cuando recibe `allowedRoles`, que el rol del usuario esté permitido. Todas las rutas autenticadas se renderizan dentro de `Layout`, que aporta el encabezado, el menú lateral y las migas de pan.
+El estado de sesión (`user`, `accessToken`, `refreshToken`) vive en `authStore` (Zustand). Mientras el backend conserva el contrato actual, los valores se persisten de forma centralizada en `localStorage`, con limpieza completa si una escritura falla. La migración del refresh token a una cookie `HttpOnly`, `Secure` y `SameSite` requiere cambios coordinados en Spring Boot (cookie, CORS y credenciales) y no se activa sólo desde este frontend.
+
+`ProtectedRoute` valida que exista una sesión inicializada y, cuando recibe `allowedRoles`, que el rol esté permitido. Esto es defensa en profundidad: la autorización definitiva y los permisos por recurso deben permanecer en los endpoints del backend.
 
 
 ## Flujo de trabajo
