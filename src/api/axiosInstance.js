@@ -23,7 +23,10 @@ async function obtenerCsrfToken() {
       _skipCsrf: true,
       _skipAuthSession: true,
     }).then(({ data, headers }) => {
-      const token = data?.token || data?.csrfToken || headers["x-xsrf-token"];
+      const token = data?.token
+        || data?.csrfToken
+        || headers["x-xsrf-token"]
+        || (typeof data === "string" ? data.trim().split(/\s+/)[0] : null);
       if (!token) throw new Error("El backend no devolvió un token CSRF válido.");
       csrfToken = token;
       return token;
