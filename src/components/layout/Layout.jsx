@@ -23,7 +23,7 @@ export default function Layout() {
           <span className="w-7 h-7 rounded-md bg-primary text-white grid place-items-center">
             <GraduationCap size={16} />
           </span>
-          <span className="font-semibold text-sm">Aularia</span>
+          <span className="font-semibold text-sm">Bit Criollo</span>
         </div>
 
         <div className="flex items-center gap-3">
