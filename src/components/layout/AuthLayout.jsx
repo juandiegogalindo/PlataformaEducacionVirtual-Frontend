@@ -8,7 +8,7 @@ export default function AuthLayout({ panelTitle, title, subtitle, ancho = "max-w
           <span className="w-7 h-7 rounded-md bg-primary grid place-items-center">
             <GraduationCap size={16} />
           </span>
-          <span className="font-semibold text-sm">Aularia</span>
+          <span className="font-semibold text-sm">Bit Criollo</span>
         </div>
 
         <div>
@@ -19,7 +19,7 @@ export default function AuthLayout({ panelTitle, title, subtitle, ancho = "max-w
           </p>
         </div>
 
-        <p className="text-[11px] text-slate-500">© 2026 Aularia · Universidad Piloto de Colombia</p>
+        <p className="text-[11px] text-slate-500">© 2026 Bit Criollo · Universidad Piloto de Colombia</p>
       </aside>
 
       <main className="flex items-center justify-center px-6 py-10">
