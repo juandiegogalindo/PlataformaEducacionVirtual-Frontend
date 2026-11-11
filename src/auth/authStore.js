@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { loginRequest, refreshRequest, logoutRequest, getPerfilRequest } from "../api/auth";
+import { usaCookiesRefresh } from "../config/authConfig";
 
 function conVersionFoto(usuario) {
   return usuario ? { ...usuario, fotoVersion: Date.now() } : usuario;
@@ -10,10 +11,11 @@ const CLAVES_SESION = ["accessToken", "refreshToken", "user"];
 function leerSesion() {
   try {
     const user = localStorage.getItem("user");
+    if (usaCookiesRefresh) localStorage.removeItem("refreshToken");
     return {
       user: user ? JSON.parse(user) : null,
       accessToken: localStorage.getItem("accessToken"),
-      refreshToken: localStorage.getItem("refreshToken"),
+      refreshToken: usaCookiesRefresh ? null : localStorage.getItem("refreshToken"),
     };
   } catch {
     limpiarSesionPersistida();
@@ -32,7 +34,8 @@ function limpiarSesionPersistida() {
 function persistirSesion({ user, accessToken, refreshToken }) {
   try {
     localStorage.setItem("accessToken", accessToken);
-    localStorage.setItem("refreshToken", refreshToken);
+    if (usaCookiesRefresh) localStorage.removeItem("refreshToken");
+    else localStorage.setItem("refreshToken", refreshToken);
     if (user) localStorage.setItem("user", JSON.stringify(user));
     else localStorage.removeItem("user");
   } catch (error) {
@@ -50,18 +53,18 @@ export const useAuthStore = create((set, get) => ({
 
   login: async (correo, contrasena) => {
     const { data } = await loginRequest(correo, contrasena);
-    if (!data?.accessToken || !data?.refreshToken) {
-      throw new Error("La respuesta de autenticación no contiene tokens válidos.");
+    if (!data?.accessToken || (!usaCookiesRefresh && !data?.refreshToken)) {
+      throw new Error("La respuesta de autenticación no contiene los datos de sesión esperados.");
     }
 
     const sessionVersion = get().sessionVersion + 1;
     try {
-      persistirSesion({ accessToken: data.accessToken, refreshToken: data.refreshToken, user: null });
-      set({ accessToken: data.accessToken, refreshToken: data.refreshToken, user: null, sessionVersion });
+      persistirSesion({ accessToken: data.accessToken, refreshToken: data.refreshToken || null, user: null });
+      set({ accessToken: data.accessToken, refreshToken: data.refreshToken || null, user: null, sessionVersion });
 
       const perfil = await getPerfilRequest();
       const usuario = conVersionFoto(perfil.data);
-      persistirSesion({ accessToken: data.accessToken, refreshToken: data.refreshToken, user: usuario });
+      persistirSesion({ accessToken: data.accessToken, refreshToken: data.refreshToken || null, user: usuario });
       set({ user: usuario });
       return usuario;
     } catch (error) {
@@ -75,14 +78,14 @@ export const useAuthStore = create((set, get) => ({
     if (expectedVersion !== get().sessionVersion) {
       throw new Error("La sesión cambió mientras se renovaba el token.");
     }
-    const refreshToken = get().refreshToken;
-    if (!refreshToken) throw new Error("No hay refresh token");
+    const refreshToken = usaCookiesRefresh ? null : get().refreshToken;
+    if (!usaCookiesRefresh && !refreshToken) throw new Error("No hay refresh token");
 
     const { data } = await refreshRequest(refreshToken);
     if (expectedVersion !== get().sessionVersion || !data?.accessToken) {
       throw new Error("La sesión cambió o la renovación no devolvió un token válido.");
     }
-    const nuevoRefreshToken = data.refreshToken || refreshToken;
+    const nuevoRefreshToken = usaCookiesRefresh ? null : (data.refreshToken || refreshToken);
     try {
       persistirSesion({ user: get().user, accessToken: data.accessToken, refreshToken: nuevoRefreshToken });
     } catch (error) {
@@ -104,9 +107,9 @@ export const useAuthStore = create((set, get) => ({
   },
 
   logout: async () => {
-    const refreshToken = get().refreshToken;
+    const refreshToken = usaCookiesRefresh ? null : get().refreshToken;
     try {
-      if (refreshToken) await logoutRequest(refreshToken);
+      await logoutRequest(refreshToken);
     } catch {
       // si el backend ya no responde, igual limpiamos la sesión local
     }

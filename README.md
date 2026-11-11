@@ -88,6 +88,8 @@ Cada recurso del backend tiene su propio módulo en `src/api/`, que exporta func
 
 El estado de sesión (`user`, `accessToken`, `refreshToken`) vive en `authStore` (Zustand). Mientras el backend conserva el contrato actual, los valores se persisten de forma centralizada en `localStorage`, con limpieza completa si una escritura falla. La migración del refresh token a una cookie `HttpOnly`, `Secure` y `SameSite` requiere cambios coordinados en Spring Boot (cookie, CORS y credenciales) y no se activa sólo desde este frontend.
 
+El modo se controla con `VITE_REFRESH_COOKIE_ENABLED`. En `false` se conserva el contrato JSON actual; en `true` Axios usa credenciales, solicita CSRF y no persiste el refresh token en `localStorage`. Activa este modo sólo después de verificar conjuntamente login, refresh, logout y CSRF contra el backend.
+
 `ProtectedRoute` valida que exista una sesión inicializada y, cuando recibe `allowedRoles`, que el rol esté permitido. Esto es defensa en profundidad: la autorización definitiva y los permisos por recurso deben permanecer en los endpoints del backend.
 
 

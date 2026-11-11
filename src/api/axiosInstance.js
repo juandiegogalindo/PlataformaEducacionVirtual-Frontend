@@ -1,22 +1,54 @@
 import axios from "axios";
 import { useAuthStore } from "../auth/authStore";
+import { usaCookiesRefresh } from "../config/authConfig";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
+  withCredentials: usaCookiesRefresh,
 });
 
-const RUTAS_SIN_TOKEN = ["/api/auth/login", "/api/auth/registro", "/api/auth/refresh"];
+const RUTAS_SIN_TOKEN = ["/api/auth/login", "/api/auth/registro", "/api/auth/refresh", "/api/auth/csrf"];
+const METODOS_MUTABLES = ["post", "put", "patch", "delete"];
+let csrfToken = null;
+let csrfPromise = null;
 
 function esRutaAuth(url) {
   return Boolean(url?.startsWith("/api/auth/"));
 }
 
-api.interceptors.request.use((config) => {
+async function obtenerCsrfToken() {
+  if (!usaCookiesRefresh || csrfToken) return csrfToken;
+  if (!csrfPromise) {
+    csrfPromise = api.get("/api/auth/csrf", {
+      _skipCsrf: true,
+      _skipAuthSession: true,
+    }).then(({ data, headers }) => {
+      const token = data?.token || data?.csrfToken || headers["x-xsrf-token"];
+      if (!token) throw new Error("El backend no devolvió un token CSRF válido.");
+      csrfToken = token;
+      return token;
+    }).finally(() => {
+      csrfPromise = null;
+    });
+  }
+  return csrfPromise;
+}
+
+export function invalidarCsrf() {
+  csrfToken = null;
+}
+
+api.interceptors.request.use(async (config) => {
   const { accessToken, sessionVersion } = useAuthStore.getState();
   config._authSessionVersion = sessionVersion;
+  config.headers = config.headers || {};
+
   if (accessToken && !RUTAS_SIN_TOKEN.includes(config.url)) {
-    config.headers = config.headers || {};
     config.headers.Authorization = `Bearer ${accessToken}`;
+  }
+  if (usaCookiesRefresh && METODOS_MUTABLES.includes((config.method || "get").toLowerCase())
+    && !config._skipCsrf) {
+    config.headers["X-XSRF-TOKEN"] = await obtenerCsrfToken();
   }
   return config;
 });
@@ -39,9 +71,13 @@ api.interceptors.response.use(
     const originalRequest = error.config;
     if (axios.isCancel(error) || error.code === "ERR_CANCELED") return Promise.reject(error);
     if (!originalRequest) return Promise.reject(error);
+    if (error.response?.status === 403 && originalRequest._skipCsrf !== true) {
+      invalidarCsrf();
+    }
 
     const currentSessionVersion = useAuthStore.getState().sessionVersion;
-    if (originalRequest._authSessionVersion !== currentSessionVersion) {
+    if (!originalRequest._skipAuthSession
+      && originalRequest._authSessionVersion !== currentSessionVersion) {
       return Promise.reject(new Error("La sesión cambió mientras la solicitud estaba pendiente."));
     }
 
@@ -61,7 +97,6 @@ api.interceptors.response.use(
 
       originalRequest._retry = true;
       isRefreshing = true;
-
       try {
         const newToken = await useAuthStore.getState().refreshAccessToken(currentSessionVersion);
         resolveQueue(null, newToken);
@@ -80,7 +115,6 @@ api.interceptors.response.use(
         isRefreshing = false;
       }
     }
-
     return Promise.reject(error);
   }
 );
