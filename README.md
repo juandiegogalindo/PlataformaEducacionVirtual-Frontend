@@ -1,6 +1,6 @@
 <div align="center">
 
-# Aularia · Plataforma de Educación Virtual
+# Bits Criollos · Plataforma de Educación Virtual
 
 **Frontend web de la plataforma de educación virtual de Bit Criollo**
 
@@ -16,7 +16,7 @@
 
 ## Descripción
 
-**Aularia** es una plataforma de educación virtual que permite gestionar cursos, lecciones, evaluaciones, calificaciones y la comunicación entre docentes y estudiantes. Este repositorio contiene el **frontend**, una aplicación de página única (SPA) que consume la API REST del backend.
+**Bits Criollos** es una plataforma de educación virtual que permite gestionar cursos, lecciones, evaluaciones, calificaciones y la comunicación entre docentes y estudiantes. Este repositorio contiene el **frontend**, una aplicación de página única (SPA) que consume la API REST del backend.
 
 El diseño de las pantallas sigue la Especificación de Diseño de Software (SDS) del proyecto, desarrollado por el grupo **Bit Criollo** de la Universidad Piloto de Colombia (ciclo 2026-2).
 
