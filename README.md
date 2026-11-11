@@ -1,4 +1,4 @@
-# Bit Criollo · Plataforma de Educación Virtual - Bit Criollo (Frontend)
+# Bit Criollo · Plataforma de Educación Virtual Frontend
 
 Aplicación web para una plataforma de educación virtual con gestión de cursos, inscripciones, lecciones, evaluaciones, calificaciones y foros, construida con React y Vite sobre la API REST del backend de Bit Criollo.
 
