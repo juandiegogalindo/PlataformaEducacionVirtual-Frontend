@@ -1,4 +1,4 @@
-# Aularia · Plataforma de Educación Virtual - Bit Criollo (Frontend)
+# Bit Criollo · Plataforma de Educación Virtual - Bit Criollo (Frontend)
 
 Aplicación web para una plataforma de educación virtual con gestión de cursos, inscripciones, lecciones, evaluaciones, calificaciones y foros, construida con React y Vite sobre la API REST del backend de Bit Criollo.
 
@@ -38,7 +38,7 @@ Aplicación web para una plataforma de educación virtual con gestión de cursos
 
 ## Descripción
 
-**Aularia** es la interfaz web de la plataforma de educación virtual **Bit Criollo**. Centraliza en una sola aplicación las actividades académicas de una institución: consulta del catálogo de cursos, inscripción de estudiantes, lecciones, recursos bibliográficos, seguimiento del progreso, evaluaciones (exámenes y tareas), calificaciones y un foro por curso.
+**Bit Criollo** es la interfaz web de la plataforma de educación virtual de la organización **Bit Criollo**. Centraliza en una sola aplicación las actividades académicas de una institución: consulta del catálogo de cursos, inscripción de estudiantes, lecciones, recursos bibliográficos, seguimiento del progreso, evaluaciones (exámenes y tareas), calificaciones y un foro por curso.
 
 Este repositorio contiene el **frontend**: una aplicación de página única (SPA) que consume la API REST del backend y adapta la interfaz al rol de cada usuario. Las pantallas siguen la Especificación de Diseño de Software (SDS) del proyecto. Fue desarrollada como proyecto académico del curso de Ingeniería de Software de la Universidad Piloto de Colombia (ciclo 2026-2).
 
