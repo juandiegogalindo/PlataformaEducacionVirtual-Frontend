@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { notaResultado, restriccionEntrega, resultadosEvaluacion, validarCalificacion, validarContenido } from "../src/pages/resultados/resultadoUtils.js";
+import { notaResultado, restriccionEntrega, resultadosEvaluacion, validarCalificacion, validarContenido } from "../src/utils/resultadoUtils.js";
 
 test("una tarea exige texto y un examen permite contenido opcional", () => {
   assert.match(validarContenido("   \n", "tareas"), /contenido/);

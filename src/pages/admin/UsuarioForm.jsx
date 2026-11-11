@@ -28,12 +28,11 @@ export default function UsuarioForm() {
     event.preventDefault();
     if (enviando.current) return;
     setError("");
-    const datos = prepararUsuario(tipo, form);
-    const obligatorios = tipo === "docentes"
-      ? ["nombre", "apellido", "correo", "codigoDocente", "especialidad", "tituloProfesional"]
-      : ["nombre", "apellido", "correo", "codigo", tipo === "coordinadores" ? "facultad" : "cargo"];
-    if (obligatorios.some((campo) => !datos[campo])) {
-      setError("Completa todos los campos obligatorios; no pueden contener solo espacios.");
+    let datos;
+    try {
+      datos = prepararUsuario(tipo, form);
+    } catch (validationError) {
+      setError(validationError.message);
       return;
     }
     if (form.contrasena.length < 8) {
@@ -42,11 +41,6 @@ export default function UsuarioForm() {
     }
     if (form.contrasena !== form.confirmacion) {
       setError("Las contraseñas no coinciden.");
-      return;
-    }
-    if (tipo === "docentes" && datos.aniosExperiencia !== null
-      && (!Number.isInteger(datos.aniosExperiencia) || datos.aniosExperiencia < 0)) {
-      setError("Los años de experiencia deben ser un número entero igual o mayor que cero.");
       return;
     }
     enviando.current = true;

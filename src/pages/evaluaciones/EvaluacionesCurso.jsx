@@ -49,7 +49,7 @@ function ListadoCurso({ cursoId }) {
               <div className="mb-3 flex items-center justify-between gap-2"><span className="text-xs text-slate-500">{evaluacion.tipo === "EXAMEN" ? "Examen" : "Tarea"}</span><Badge variant={ESTADOS_EVALUACION[evaluacion.estado]?.variant}>{ESTADOS_EVALUACION[evaluacion.estado]?.label || evaluacion.estado}</Badge></div>
               <h2 className="break-words text-sm font-semibold">{evaluacion.titulo}</h2>
               <p className="mt-2 line-clamp-3 whitespace-pre-wrap break-words text-xs text-slate-500">{evaluacion.descripcion || "Sin descripción."}</p>
-              <div className="mt-auto flex items-center justify-between gap-3 pt-5 text-xs"><span className="text-slate-500">Peso: <strong>{porcentaje(evaluacion.pesoPorcentual)} %</strong></span><Link className="font-semibold text-primary hover:underline" to={rutaEvaluacion(cursoId, evaluacion.tipo, evaluacion.id)}>Ver detalle</Link></div>
+              <div className="mt-auto flex items-center justify-between gap-3 pt-5 text-xs"><span className="text-slate-500">Peso: <strong>{porcentaje(evaluacion.pesoPorcentual)} %</strong></span>{["TAREA", "EXAMEN"].includes(evaluacion.tipo) ? <Link className="font-semibold text-primary hover:underline" to={rutaEvaluacion(cursoId, evaluacion.tipo, evaluacion.id)}>Ver detalle</Link> : <span className="text-red-600">Tipo no válido</span>}</div>
             </article>
           ))}</div> : <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
             <p>{evaluaciones.length ? "No hay evaluaciones que coincidan con los filtros." : "No hay evaluaciones disponibles en este curso."}</p>

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { editarMensaje, eliminarMensaje, listarMensajes, publicarMensaje } from "../../api/foro";
 import { useAuthStore } from "../../auth/authStore"; // AJUSTAR ruta
+import { mensajeError } from "../../utils/errores";
 import {
   buscarMensaje, contarRespuestas, iniciales, limpiarRol, puedeEditar, puedeEliminar,
   tiempoRelativo, tituloDe,
@@ -123,8 +124,8 @@ export default function ForoHilo() {
         setArbol(data);
         setError("");
       })
-      .catch(() => {
-        if (!cancelado) setError("No se pudo cargar la publicación. Intenta de nuevo.");
+      .catch((err) => {
+        if (!cancelado) setError(mensajeError(err, "No se pudo cargar la publicación. Intenta de nuevo."));
       })
       .finally(() => {
         if (!cancelado) setCargando(false);
@@ -145,8 +146,8 @@ export default function ForoHilo() {
       setRespondiendoA(null);
       setAviso("Tu respuesta fue publicada y es visible para los participantes autorizados.");
       recargar();
-    } catch {
-      setError("No se pudo publicar tu respuesta. Intenta de nuevo.");
+    } catch (err) {
+      setError(mensajeError(err, "No se pudo publicar tu respuesta. Intenta de nuevo."));
     } finally {
       setEnviando(false);
     }
@@ -158,8 +159,8 @@ export default function ForoHilo() {
       setEditandoId(null);
       setAviso("Cambios guardados.");
       recargar();
-    } catch {
-      setError("No tienes permiso para editar este mensaje o ocurrió un error.");
+    } catch (err) {
+      setError(mensajeError(err, "No tienes permiso para editar este mensaje o ocurrió un error."));
     }
   }
 
@@ -173,8 +174,8 @@ export default function ForoHilo() {
       }
       setAviso("Mensaje eliminado.");
       recargar();
-    } catch {
-      setError("No se pudo eliminar el mensaje.");
+    } catch (err) {
+      setError(mensajeError(err, "No se pudo eliminar el mensaje."));
     }
   }
 

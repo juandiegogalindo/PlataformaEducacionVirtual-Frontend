@@ -18,8 +18,8 @@ import EvaluacionForm from "./pages/evaluaciones/EvaluacionForm";
 import EvaluacionDetalle from "./pages/evaluaciones/EvaluacionDetalle";
 import Calificaciones from "./pages/resultados/Calificaciones";
 import CalificacionesCurso from "./pages/resultados/CalificacionesCurso";
-import ForoPage from "./pages/foro/foro";
-import ForoHilo from "./pages/foro/foroHilo";
+import ForoPage from "./pages/foro/Foro";
+import ForoHilo from "./pages/foro/ForoHilo";
 import RecursosBibliograficos from "./pages/recursosBibliograficos/RecursosBibliograficos";
 
 function App() {

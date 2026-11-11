@@ -9,11 +9,15 @@ export function registroRequest(datos) {
 }
 
 export function refreshRequest(refreshToken) {
-  return api.post("/api/auth/refresh", { refreshToken });
+  return api.post("/api/auth/refresh", refreshToken ? { refreshToken } : undefined);
 }
 
 export function logoutRequest(refreshToken) {
-  return api.post("/api/auth/logout", { refreshToken });
+  return api.post("/api/auth/logout", refreshToken ? { refreshToken } : undefined);
+}
+
+export function csrfRequest() {
+  return api.get("/api/auth/csrf", { _skipCsrf: true, _skipAuthSession: true });
 }
 
 export function getPerfilRequest() {

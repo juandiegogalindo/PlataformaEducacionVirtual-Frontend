@@ -16,7 +16,17 @@ export function reducirImagen(archivo, ladoMax = 512) {
       const canvas = document.createElement("canvas");
       canvas.width = ancho;
       canvas.height = alto;
-      const contexto = canvas.getContext("2d");
+      let contexto;
+      try {
+        contexto = canvas.getContext("2d");
+      } catch {
+        reject(new Error("No se pudo obtener el contexto 2D para procesar la imagen"));
+        return;
+      }
+      if (!contexto) {
+        reject(new Error("El navegador no admite el procesamiento de imágenes en Canvas"));
+        return;
+      }
 
       if (!esPng) {
         contexto.fillStyle = "#ffffff";

@@ -6,6 +6,7 @@ import AuthLayout from "../../components/layout/AuthLayout";
 import Input from "../../components/ui/Input";
 import Alert from "../../components/ui/Alert";
 import { ROLES } from "../../auth/roles";
+import { mensajeError } from "../../utils/errores";
 
 function formatearTiempo(segundos) {
   const m = String(Math.floor(segundos / 60)).padStart(2, "0");
@@ -17,6 +18,7 @@ export default function Login() {
   const [correo, setCorreo] = useState("");
   const [contrasena, setContrasena] = useState("");
   const [fallo, setFallo] = useState(false);
+  const [mensajeFallo, setMensajeFallo] = useState("");
   const [intentos, setIntentos] = useState(null);
   const [bloqueoSeg, setBloqueoSeg] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -35,18 +37,20 @@ export default function Login() {
     e.preventDefault();
     if (bloqueado) return;
     setFallo(false);
+    setMensajeFallo("");
     setLoading(true);
     try {
       const usuario = await login(correo, contrasena);
       navigate(usuario.rol === ROLES.ADMINISTRADOR ? "/admin/usuarios" : "/cursos");
     } catch (err) {
       const data = err.response?.data;
-      // Ajusta estos campos a lo que realmente devuelva tu backend
       if (err.response?.status === 423 || data?.bloqueado) {
         setBloqueoSeg(data?.segundosRestantes ?? 15 * 60);
-      } else {
+      } else if (err.response?.status === 401) {
         setIntentos(data?.intentosRestantes ?? null);
         setFallo(true);
+      } else {
+        setMensajeFallo(mensajeError(err, "No se pudo iniciar sesión. Revisa la conexión y la configuración de seguridad."));
       }
     } finally {
       setLoading(false);
@@ -65,10 +69,11 @@ export default function Login() {
           <strong>{formatearTiempo(bloqueoSeg)}</strong> minutos.
         </Alert>
       )}
-      {fallo && !bloqueado && (
-        <Alert variant="warning" title="Credenciales incorrectas" className="mb-5">
-          Verifique su correo y contraseña.
-          {intentos != null && ` Le quedan ${intentos} ${intentos === 1 ? "intento" : "intentos"}.`}
+      {(fallo || mensajeFallo) && !bloqueado && (
+        <Alert variant={mensajeFallo ? "error" : "warning"} title={mensajeFallo || "Credenciales incorrectas"} className="mb-5">
+          {!mensajeFallo && <>Verifique su correo y contraseña.
+            {intentos != null && ` Le quedan ${intentos} ${intentos === 1 ? "intento" : "intentos"}.`}
+          </>}
         </Alert>
       )}
 
