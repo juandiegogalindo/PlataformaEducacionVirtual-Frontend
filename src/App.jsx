@@ -9,6 +9,7 @@ import MisInscripciones from "./pages/cursos/MisInscripciones";
 import Perfil from "./pages/perfil/Perfil";
 import CursoForm from "./pages/cursos/CursoForm";
 import { ROLES, ROLES_GESTION_CURSOS, ROLES_EVALUACIONES } from "./auth/roles";
+import ReportesAcademicos from "./pages/reportes/ReportesAcademicos";
 import AdminLayout from "./pages/admin/AdminLayout";
 import Usuarios from "./pages/admin/Usuarios";
 import UsuarioForm from "./pages/admin/UsuarioForm";
@@ -51,6 +52,7 @@ function App() {
           </Route>
 
           <Route path="/perfil" element={<Perfil />} />
+          <Route path="/reportes/academicos" element={<ProtectedRoute allowedRoles={[ROLES.COORDINADOR]}><ReportesAcademicos /></ProtectedRoute>} />
           <Route path="/calificaciones" element={<ProtectedRoute allowedRoles={[ROLES.ESTUDIANTE, ROLES.DOCENTE]}><Calificaciones /></ProtectedRoute>} />
           <Route path="/cursos/:cursoId/calificaciones" element={<ProtectedRoute allowedRoles={[ROLES.DOCENTE]}><CalificacionesCurso /></ProtectedRoute>} />
           <Route path="/evaluaciones" element={<ProtectedRoute allowedRoles={ROLES_EVALUACIONES}><Evaluaciones /></ProtectedRoute>} />

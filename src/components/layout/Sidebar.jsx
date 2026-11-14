@@ -6,7 +6,8 @@ import {
   ClipboardList,
   User,
   Users,
-  Award
+  Award,
+  BarChart3
 } from "lucide-react";
 
 import { useAuthStore } from "../../auth/authStore";
@@ -44,6 +45,11 @@ export default function Sidebar() {
       to: "/calificaciones",
       label: "Calificaciones",
       icon: Award
+    },
+    user?.rol === ROLES.COORDINADOR && {
+      to: "/reportes/academicos",
+      label: "Reportes académicos",
+      icon: BarChart3
     },
     {
       to: "/foro",
